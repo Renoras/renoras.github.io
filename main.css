@@ -1,0 +1,31 @@
+html, body {
+    background: #252627!important;
+    color: #fff!important;
+}
+.project-card {
+    background: #343a40!important;
+}
+.intro-card {
+    background: #343a40!important;
+}
+.navbar {
+    background: #343a40;
+}
+.nav-item, .nav-link {
+    color: rgba(255, 255, 255, 0.5)!important;
+}
+.navbar-brand {
+    color: #fff!important;
+}
+.tag  {
+    background: #175592!important;
+}
+.card-btn {
+    background-color: #17a2b8!important;
+}
+.card-btn:hover {
+    background-color: #17a2b8!important;
+}
+.card-btn:focus {
+    box-shadow: none!important;
+}
