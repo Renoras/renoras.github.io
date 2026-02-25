@@ -2,7 +2,7 @@ window.data = `{
     "intro": {
         "about": {
             "title": "Introduction",
-            "body": "<strong><p>I’m a software engineer with a focus on graphics programming and real-time rendering, holding a master’s degree in computer science. Most of my work revolves around real-time rendering and game engine development — I’ve built engines from scratch in C++ using Vulkan, OpenGL, and Direct3D, and spent a lot of time on things like physically based lighting, ray tracing, path tracing, and global illumination.</p><p>Over the years my work has expanded beyond pure rendering. I’ve shipped production projects in Unity and C#, handled WebGL deployments, and more recently gotten into LLM engineering and agentic systems. I find the intersection of AI and 3D particularly interesting — using language models and agents to drive behaviour in virtual worlds, building systems where AI can reason about and interact with 3D environments, or wiring intelligent pipelines into real-time applications.</p><p>I enjoy working across the full stack of a 3D system, from writing shaders to designing the architecture that holds everything together. Some of the topics I keep coming back to:</p><ul><li>Real-time rendering and path tracing</li><li>Game engine architecture</li><li>Virtual reality and XR</li><li>LLM engineering and agentic systems</li><li>AI and 3D world integration</li></ul>Here are some of my earlier projects that shaped my path...</strong>"
+            "body": "<strong><p>I’m a software engineer with a master’s degree in computer science, focused on graphics programming and real-time rendering. Most of my work revolves around real-time rendering and game engine development — I’ve built engines from scratch in C++ using Vulkan, OpenGL, and Direct3D, and spent a lot of time on things like physically based lighting, ray tracing, path tracing, and global illumination.</p><p>Over the years, my work has expanded beyond pure rendering. I’ve shipped production projects in Unity and C#, handled WebGL deployments, and more recently gotten into LLM engineering and agentic systems. I find the intersection of AI and 3D particularly interesting — using language models and agents to drive behaviour in virtual worlds, building systems where AI can reason about and interact with 3D environments, or wiring intelligent pipelines into real-time applications.</p><p>I enjoy working across the full stack of a 3D system, from writing shaders to designing the architecture that holds everything together. Some of the topics I keep coming back to:</p><ul><li>Real-time rendering and path tracing</li><li>Game engine architecture</li><li>Virtual reality and XR</li><li>LLM engineering and agentic systems</li><li>AI and 3D world integration</li></ul>Here are some of my earlier projects that shaped my path...</strong>"
         }
     },
     "projects": [
@@ -22,7 +22,7 @@ window.data = `{
                         "url": "https://github.com/RaygenEngine/Raygen"
                     }
                 ],
-                "body": "<p>Raygen is a two-person project that has given me the opportunity to experiment with a more modern rendering methodology by using graphics APIs such as Vulkan and D3D12. In this engine, I have applied and tested several graphics techniques, including hybrid ones that combine deferred rendering and raytracing. Through this project, I have gained a lot of experience on game engine design, software design patterns as well as working on large codebases with many external dependencies.</p><p>For a more complete description of the project and the people involved in the development process, the interested reader is encouraged to press the \\\"Source\\\" button.</p>"
+                "body": "<p>Raygen is a two-person project that has given me the opportunity to experiment with a more modern rendering methodology by using graphics APIs such as Vulkan and D3D12. In this engine, I have applied and tested several graphics techniques, including hybrid ones that combine deferred rendering and raytracing. Through this project, I have gained a lot of experience in game engine design, software design patterns as well as working on large codebases with many external dependencies.</p><p>For a more complete description of the project and the people involved in the development process, the interested reader is encouraged to press the \\\"Source\\\" button.</p>"
             }
         },
         {
@@ -41,7 +41,7 @@ window.data = `{
                         "url": "https://github.com/RaygenEngine/Kaleido"
                     }
                 ],
-                "body": "<p>Kaleido is a good starting point for a graphics academic assignment or personal project. It can be used to avoid boilerplate that is usually required for asset loading, level designing functionality, input capture, etc.</p><p>Among other things, this engine offers multithreaded loading and automated caching of assets as well as an easy way to introduce additional loaders for new asset types. Using the existing ImGui based editor the programmer can set up a complex level hierarchy that automatically updates by the engine using a scenegraph structure. Finally, the programmer can implement their own renderers using any graphics API desired, and have them registered for run-time swapping. For example one could register a real-time renderer and a photorealistic pathtracer to be used interchangeably in order to test the visual fidelity of the former.</p>"
+                "body": "<p>Kaleido is a good starting point for a graphics academic assignment or personal project. It can be used to avoid boilerplate that is usually required for asset loading, level designing functionality, input capture, etc.</p><p>Among other things, this engine offers multithreaded loading and automated caching of assets as well as an easy way to introduce additional loaders for new asset types. Using the existing ImGui-based editor the programmer can set up a complex level hierarchy that automatically updates by the engine using a scenegraph structure. Finally, the programmer can implement their own renderers using any graphics API desired, and have them registered for run-time swapping. For example, one could register a real-time renderer and a photorealistic pathtracer to be used interchangeably in order to test the visual fidelity of the former.</p>"
             }
         },
         {
@@ -82,7 +82,7 @@ window.data = `{
                         "url": "https://github.com/RaygenEngine/Raygen/blob/master/assets/engine-data/spv/includes/radiance.glsl#L164"
                     }
                 ],
-                "body": "<p>Variable sized axis-aligned grid of equidistant probes. The grid structure consists of an array of low-resolution cubemaps that correspond to each probe. When built, probes capture their surrounding lighting information using Raygen's stochastic pathtracer and store them into their respective cubemap.</p><p>At a later stage, global diffuse lighting of a surface affected by the grid is calculated by interpolating data from several nearby probes similarly to how a 3D texture would be sampled with bilinear interpolation. The normal of the surface is reprojected to account for the difference in position between the probes involved and the surface's point.</p>"
+                "body": "<p>Variable-sized axis-aligned grid of equidistant probes. The grid structure consists of an array of low-resolution cubemaps that correspond to each probe. When built, probes capture their surrounding lighting information using Raygen's stochastic pathtracer and store them in their respective cubemap.</p><p>At a later stage, global diffuse lighting of a surface affected by the grid is calculated by interpolating data from several nearby probes similarly to how a 3D texture would be sampled with bilinear interpolation. The normal of the surface is reprojected to account for the difference in position between the probes involved and the surface's point.</p>"
             }
         },
         {
@@ -117,7 +117,7 @@ window.data = `{
                         "url": "https://cg.ivd.kit.edu/publications/2017/svgf/svgf_preprint.pdf"
                     }
                 ],
-                "body": "<p>This technique consists of two parts. For the first part, the area light shadowing is calculated using several raytracing visibility queries. To remain temporally stable, the results are filtered using an SVGF approach.</p><p>The second part of this technique uses the representative point method to account for the specular highlights created by an area light source. If the surface's reflection vector intersects with the light mesh we use this as our light vector, otherwise, we use the vector between our surface point and the point closest to the reflection vector (smallest required rotation). Putting this new light vector in our direct specular BRDF calculations gives us a decent approximation of the specular highlight produced by the light mesh.</p>"
+                "body": "<p>This technique consists of two parts. For the first part, the area light shadowing is calculated using several raytracing visibility queries. To remain temporally stable, the results are filtered using an SVGF approach.</p><p>The second part of this technique uses the representative point method to account for the specular highlights created by an area light source. If the surface's reflection vector intersects with the light mesh, we use this as our light vector, otherwise, we use the vector between our surface point and the point closest to the reflection vector (smallest required rotation). Putting this new light vector in our direct specular BRDF calculations gives us a decent approximation of the specular highlight produced by the light mesh.</p>"
             }
         },
         {
@@ -144,7 +144,7 @@ window.data = `{
                         "url": "https://hal.inria.fr/file/index/docid/288758/filename/article.pdf"
                     }
                 ],
-                "body": "<p>This technique calculates the sky color for Raygen's scenes. It is a photorealistic ray-marching approach that can accurately render skies based on several scattering coefficients and astronomical information. Uses Rayleigh and Mie scattering to calculate the effect of air molecules and aerosols on light cast on the planet by any stars involved. Shader depicted uses earth-like data. The shader could be easily parameterized to calculate several scenarios such as urban atmospheres, alien skies, etc.</p>"
+                "body": "<p>This technique calculates the sky color for Raygen's scenes. It is a photorealistic ray-marching approach that can accurately render skies based on several scattering coefficients and astronomical information. It uses Rayleigh and Mie scattering to calculate the effect of air molecules and aerosols on light cast on the planet by any stars involved. The shader depicted uses Earth-like data. The shader could be easily parameterized to calculate several scenarios such as urban atmospheres, alien skies, etc.</p>"
             }
         },
         {
@@ -155,7 +155,7 @@ window.data = `{
             },
             "content": {
                 "title": "Lens-matched Sampling",
-                "secondaryTitle": "Technique that was part of my master thesis",
+                "secondaryTitle": "Technique that was part of my master's thesis",
                 "tags": ["C++14", "OculusSDK", "OptiX6.0", "Virtual Reality", "Raytracing", "CMake"],
                 "buttons": [
                     {
@@ -186,7 +186,7 @@ window.data = `{
                         "url": "pdf/gthesis.pdf"
                     }
                 ],
-                "body": "<p>This post-process ray-marching technique simulates light scattering as it passes through a medium where interaction with participating media takes place. This effect is responsible for the appearance of light shafts otherwise known as God rays.</p><p>The most important optimization was to distinguish the volume covered by the light in 3D space. This light volume is defined as the space in which light constantly travels through and occupies a 3D integral of a potentially ever-changing and complicated geometrical arrangement. Results showed that the ray-marched line segment bounded only by the light's influence volume achieved far greater performance and similar visual fidelity to a non-clipped ray that used 10x times the sample count of the former.</p>"
+                "body": "<p>This post-process ray-marching technique simulates light scattering as it passes through a medium where interaction with participating media takes place. This effect is responsible for the appearance of light shafts otherwise known as God rays.</p><p>The most important optimization was to distinguish the volume covered by the light in 3D space. This light volume is defined as the space in which light constantly travels through and occupies a 3D integral of a potentially ever-changing and complicated geometrical arrangement. Results showed that the ray-marched line segment bounded only by the light's influence volume achieved far greater performance and similar visual fidelity to a non-clipped ray that used 10x the sample count of the former.</p>"
             }
         },
         {
@@ -205,13 +205,13 @@ window.data = `{
                         "url": "http://graphics.cs.aueb.gr/graphics/media/cg2017.mp4"
                     }
                 ],
-                "body": "<p>A game development assignment for a graduate-level graphics class. In this project, I was an integral part of game design and direction. I coded in a variety of special abilities and their audiovisual representation inside the game. Moreover, I implemented realistic movement for the game objects/actors and worked on meteor and item spawning, physics and boss AI. As for rendering, I added smooth shadows, depth of field, bloom, and normal mapping.</p><p>Asteroid blasters was a very fun team project and an excellent introduction to the world of graphics, 3D world simulation, and game development. Since we managed to get all the available extra credits and also add much more content than was originally required, our work was awarded with the title of the \\\"Best Graphics Project\\\" for the year 2016.</p>"
+                "body": "<p>A game development assignment for a graduate-level graphics class. In this project, I was an integral part of game design and direction. I coded a variety of special abilities and their audiovisual representation inside the game. Moreover, I implemented realistic movement for the game objects/actors and worked on meteor and item spawning, physics and boss AI. As for rendering, I added smooth shadows, depth of field, bloom, and normal mapping.</p><p>Asteroid Blaster was a very fun team project and an excellent introduction to the world of graphics, 3D world simulation, and game development. Since we managed to get all the available extra credits and also add much more content than was originally required, our work was awarded with the title of the \\\"Best Graphics Project\\\" for the year 2016.</p>"
             }
         }
     ],
     "contact": {
         "title": "Links",
-        "body":  "<a href='mailto: ioansmoschos@gmail.com'>ioansmoschos@gmail.com</a><br><a href='https://linkedin.com/in/john-moschos-829bbb205' target='_blank'>https://linkedin.com/in/john-moschos-829bbb205</a><br><a href='https://github.com/Renoras' target='_blank'>https://github.com/Renoras</a>",
+        "body":  "<a href='mailto:ioansmoschos@gmail.com'>ioansmoschos@gmail.com</a><br><a href='https://linkedin.com/in/john-moschos-829bbb205' target='_blank'>https://linkedin.com/in/john-moschos-829bbb205</a><br><a href='https://github.com/Renoras' target='_blank'>https://github.com/Renoras</a>",
         "linkedIn": {
 
         }
