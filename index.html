@@ -1,1 +1,356 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="favicon.ico"><link href="/fonts.googleapis.com/css?family=Open+Sans:600,400,800,700" rel="stylesheet" type="text/css"><link href="main.css" rel="stylesheet" type="text/css"><script src="https://platform.linkedin.com/badges/js/profile.js"></script><script src="data.js"></script><title>John Moschos</title><link href="css/app.e4875397.css" rel="prefetch"><link href="css/chunk-vendors.8b7f2bbf.css" rel="prefetch"><link href="js/app.ce9937e9.js" rel="prefetch"><link href="js/chunk-vendors.b14a5f54.js" rel="prefetch"><link href="css/app.e4875397.css" rel="preload" as="style"><link href="css/chunk-vendors.8b7f2bbf.css" rel="preload" as="style"><link href="js/app.ce9937e9.js" rel="preload" as="script"><link href="js/chunk-vendors.b14a5f54.js" rel="preload" as="script"><link href="css/chunk-vendors.8b7f2bbf.css" rel="stylesheet"><link href="css/app.e4875397.css" rel="stylesheet"></head><body><noscript><strong>We're sorry but AB SWOD doesn't work properly without JavaScript enabled. Please enable it to continue.</strong></noscript><div id="app"></div><script src="js/chunk-vendors.b14a5f54.js"></script><script src="js/app.ce9937e9.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>John Moschos · Graphics Engineer</title>
+    <meta name="description" content="John Moschos, Graphics Engineer. Real-time rendering, ray tracing, game engine architecture, and AI-driven 3D systems.">
+    <meta property="og:title" content="John Moschos · Graphics Engineer">
+    <meta property="og:description" content="Real-time rendering, ray tracing, game engine architecture, and AI-driven 3D systems.">
+    <meta property="og:url" content="https://jmoschos.me/">
+    <meta property="og:type" content="website">
+    <link rel="icon" href="favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+
+<nav class="nav" id="nav">
+    <a class="nav-brand" href="#top">jm<span class="accent">.</span></a>
+    <div class="nav-links">
+        <a href="#projects">Projects</a>
+        <a href="#experience">Experience</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+        <a class="nav-cv" href="pdf/cv.pdf" target="_blank" rel="noopener">CV</a>
+    </div>
+</nav>
+
+<header class="hero" id="top">
+    <canvas id="gl" aria-hidden="true"></canvas>
+    <div class="hero-inner">
+        <p class="hero-kicker">Athens, Greece</p>
+        <h1>John Moschos</h1>
+        <p class="hero-role">Graphics Engineer</p>
+        <p class="hero-tagline">Real-time rendering, ray tracing &amp; game engine architecture.
+        Lately, AI agents that reason about and act inside 3D worlds.</p>
+        <div class="hero-actions">
+            <a class="btn btn-primary" href="#projects">Selected projects</a>
+            <a class="btn btn-ghost" href="mailto:ioansmoschos@gmail.com">Get in touch</a>
+        </div>
+    </div>
+    <a class="hero-scroll" href="#projects" aria-label="Scroll to projects">▼</a>
+</header>
+
+<main>
+
+<!-- ===================== SELECTED PROJECTS ===================== -->
+<section class="section" id="projects">
+    <div class="section-head">
+        <h2><span class="section-index">01</span> Selected Projects</h2>
+        <p>Engines, renderers and techniques I've built. Every clip below is captured from my own code.</p>
+    </div>
+
+    <!-- Raygen -->
+    <article class="project featured">
+        <div class="project-media">
+            <video src="media/Raygen.mp4" width="1280" height="972" muted loop playsinline preload="none"></video>
+        </div>
+        <div class="project-body">
+            <h3>Raygen Engine</h3>
+            <p class="project-sub">A game engine built from scratch to explore real-time ray tracing</p>
+            <p>Raygen is a two-person, from-scratch engine written in modern C++ with Vulkan, designed
+            as a testbed for hybrid rendering: a deferred rasterization pipeline combined with
+            hardware ray tracing for shadows, reflections and global illumination. Building it end to end
+            meant owning everything from the render graph and asset pipeline to the ECS and editor tooling.</p>
+            <ul class="tags">
+                <li>C++20</li><li>Vulkan</li><li>GLSL</li><li>Ray Tracing</li><li>ECS</li><li>CMake</li>
+            </ul>
+            <div class="project-links">
+                <a href="https://github.com/RaygenEngine/Raygen" target="_blank" rel="noopener">Source ↗</a>
+            </div>
+        </div>
+    </article>
+
+    <!-- Stochastic Pathtracer -->
+    <article class="project">
+        <div class="project-media">
+            <video src="media/SPT.mp4" width="690" height="516" muted loop playsinline preload="none"></video>
+        </div>
+        <div class="project-body">
+            <h3>Stochastic Pathtracer</h3>
+            <p class="project-sub">Unbiased Monte Carlo reference renderer inside Raygen</p>
+            <p>A single-path Monte Carlo pathtracer used as Raygen's ground-truth renderer.
+            Next event estimation and multiple importance sampling drive fast convergence. Layered diffuse
+            and specular BRDFs/BTDFs cover a wide material range, and Russian roulette termination keeps the
+            estimator unbiased while culling insignificant paths.</p>
+            <ul class="tags">
+                <li>Raygen Engine</li><li>Path Tracing</li><li>NEE</li><li>MIS</li><li>BSDF</li>
+            </ul>
+            <div class="project-links">
+                <a href="https://github.com/RaygenEngine/Raygen/tree/master/assets/engine-data/spv/pathtrace/stochastic" target="_blank" rel="noopener">Source ↗</a>
+            </div>
+        </div>
+    </article>
+
+    <!-- Raytraced Area Lights -->
+    <article class="project">
+        <div class="project-media">
+            <video src="media/RTQ.mp4" width="722" height="652" muted loop playsinline preload="none"></video>
+        </div>
+        <div class="project-body">
+            <h3>Ray-traced Area Lights</h3>
+            <p class="project-sub">Real-time soft shadows and specular highlights from mesh lights</p>
+            <p>Area-light shadowing is resolved with ray-traced visibility queries, then denoised with an
+            SVGF-style spatiotemporal filter for temporal stability. Specular response uses the representative
+            point method: the reflection vector is snapped to the closest point on the light mesh, giving a
+            convincing highlight from arbitrary emitter shapes at real-time cost.</p>
+            <ul class="tags">
+                <li>Raygen Engine</li><li>Ray Tracing</li><li>SVGF</li><li>Representative Point</li>
+            </ul>
+            <div class="project-links">
+                <a href="https://github.com/RaygenEngine/Raygen/tree/master/assets/engine-data/spv/raytrace/arealights" target="_blank" rel="noopener">Shading ↗</a>
+                <a href="https://github.com/RaygenEngine/Raygen/tree/master/assets/engine-data/spv/svgf" target="_blank" rel="noopener">Denoiser ↗</a>
+            </div>
+        </div>
+    </article>
+
+    <!-- Irradiance Grid -->
+    <article class="project">
+        <div class="project-media">
+            <video src="media/IBLIRS.mp4" width="786" height="616" muted loop playsinline preload="none"></video>
+        </div>
+        <div class="project-body">
+            <h3>Irradiance Probe Grid</h3>
+            <p class="project-sub">Diffuse global illumination for Raygen's real-time renderer</p>
+            <p>A variable-density grid of light probes, each baked by capturing its surroundings with the
+            stochastic pathtracer into a low-resolution cubemap. At runtime, diffuse GI is reconstructed by
+            trilinearly blending nearby probes, much like sampling a 3D texture of incoming radiance, with
+            the surface normal reprojected per probe to correct for the positional offset.</p>
+            <ul class="tags">
+                <li>Raygen Engine</li><li>Global Illumination</li><li>IBL</li><li>Compute</li>
+            </ul>
+            <div class="project-links">
+                <a href="https://github.com/RaygenEngine/Raygen/blob/master/assets/engine-data/spv/compute/irradiance.comp" target="_blank" rel="noopener">Bake ↗</a>
+                <a href="https://github.com/RaygenEngine/Raygen/blob/master/assets/engine-data/spv/includes/radiance.glsl#L164" target="_blank" rel="noopener">Sampling ↗</a>
+            </div>
+        </div>
+    </article>
+
+    <!-- Sunlight Scattering -->
+    <article class="project">
+        <div class="project-media">
+            <video src="media/SKY_smooth.mp4" width="842" height="664" muted loop playsinline preload="none"></video>
+        </div>
+        <div class="project-body">
+            <h3>Atmospheric Scattering</h3>
+            <p class="project-sub">Physically based sky simulation via ray marching</p>
+            <p>A ray-marched atmosphere model computing Rayleigh and Mie scattering from physical coefficients
+            and astronomical parameters. The shader ships with Earth-like values but is fully parameterized:
+            hazy urban skies, sunsets on alien planets, or any star's spectrum fall out of the same integral.</p>
+            <ul class="tags">
+                <li>Raygen Engine</li><li>Ray Marching</li><li>Rayleigh &amp; Mie</li>
+            </ul>
+            <div class="project-links">
+                <a href="https://github.com/RaygenEngine/Raygen/blob/master/assets/engine-data/spv/includes/sky.glsl" target="_blank" rel="noopener">Source ↗</a>
+            </div>
+        </div>
+    </article>
+
+    <!-- Kaleido -->
+    <article class="project">
+        <div class="project-media">
+            <video src="media/Kaleido.mp4" width="1042" height="1002" muted loop playsinline preload="none"></video>
+        </div>
+        <div class="project-body">
+            <h3>Kaleido Engine</h3>
+            <p class="project-sub">Graphics engine with hot-swappable renderers across APIs</p>
+            <p>Kaleido lets you register multiple renderers (OpenGL, Vulkan, D3D11, or an offline pathtracer)
+            and swap them at runtime against the same scene, making it ideal for comparing a real-time
+            approximation against ground truth. It provides multithreaded asset loading with automatic caching,
+            an extensible loader system, and an ImGui editor over a scenegraph.</p>
+            <ul class="tags">
+                <li>C++17</li><li>Vulkan</li><li>OpenGL</li><li>D3D11</li><li>GLSL</li><li>HLSL</li>
+            </ul>
+            <div class="project-links">
+                <a href="https://github.com/RaygenEngine/Kaleido" target="_blank" rel="noopener">Source ↗</a>
+            </div>
+        </div>
+    </article>
+
+    <!-- Lens-matched Sampling -->
+    <article class="project">
+        <div class="project-media">
+            <video src="media/SM.mp4" width="1284" height="1080" muted loop playsinline preload="none"></video>
+        </div>
+        <div class="project-body">
+            <h3>Lens-matched Sampling <span class="badge">MSc thesis</span></h3>
+            <p class="project-sub">Foveated ray generation for photorealistic VR</p>
+            <p>VR lens distortion means peripheral pixels contribute far less than central ones, so why trace
+            them at full density? This technique varies the ray-generation rate across the image via an
+            adjustable mask, cutting the ray budget for stereoscopic path tracing while preserving perceived
+            quality. Built on OptiX with the Oculus SDK as part of a from-scratch VR ray tracing engine.</p>
+            <ul class="tags">
+                <li>C++14</li><li>OptiX</li><li>Oculus SDK</li><li>VR</li><li>Ray Tracing</li>
+            </ul>
+            <div class="project-links">
+                <a href="pdf/mthesis.pdf" target="_blank" rel="noopener">Thesis PDF ↗</a>
+            </div>
+        </div>
+    </article>
+
+    <!-- Volumetric Lighting -->
+    <article class="project">
+        <div class="project-media">
+            <video src="media/VL.mp4" width="836" height="836" muted loop playsinline preload="none"></video>
+        </div>
+        <div class="project-body">
+            <h3>Volumetric Lighting <span class="badge">BSc thesis</span></h3>
+            <p class="project-sub">Light-volume-clipped ray marching for god rays</p>
+            <p>A post-process ray-marching technique simulating in-scattering through participating media.
+            The key optimization clips each ray to the light's influence volume before marching: the bounded
+            segment matched the visual fidelity of an unclipped ray using 10× the sample count, at a fraction
+            of the cost.</p>
+            <ul class="tags">
+                <li>C++11</li><li>OpenGL</li><li>GLSL</li><li>Ray Marching</li><li>XEngine</li>
+            </ul>
+            <div class="project-links">
+                <a href="pdf/gthesis.pdf" target="_blank" rel="noopener">Thesis PDF ↗</a>
+                <a href="http://graphics.cs.aueb.gr/graphics/downloads/xenginedoc/XEngine.html" target="_blank" rel="noopener">XEngine ↗</a>
+            </div>
+        </div>
+    </article>
+
+    <!-- Asteroid Blaster -->
+    <article class="project">
+        <div class="project-media">
+            <video src="media/AB.mp4" width="998" height="1346" muted loop playsinline preload="none"></video>
+        </div>
+        <div class="project-body">
+            <h3>Asteroid Blaster <span class="badge">Best Graphics Project 2016</span></h3>
+            <p class="project-sub">From the graphics course that introduced me to the field</p>
+            <p>A game a few classmates and I built for a graduate graphics course. I worked on game design, special abilities and
+            their audiovisual feedback, actor movement and physics, spawning systems and boss AI, and on
+            the rendering side added soft shadows, depth of field, bloom and normal mapping. We had a lot
+            of fun packing in more than the assignment asked for.</p>
+            <ul class="tags">
+                <li>C++11</li><li>OpenGL</li><li>GLSL</li><li>Gameplay</li>
+            </ul>
+            <div class="project-links">
+                <a href="http://graphics.cs.aueb.gr/graphics/media/cg2017.mp4" target="_blank" rel="noopener">Award reel ↗</a>
+            </div>
+        </div>
+    </article>
+</section>
+
+<!-- ===================== EXPERIENCE ===================== -->
+<section class="section" id="experience">
+    <div class="section-head">
+        <h2><span class="section-index">02</span> Experience</h2>
+    </div>
+    <ol class="timeline">
+        <li>
+            <div class="tl-when">2024 – Present</div>
+            <div class="tl-what">
+                <h3>Graphics Software Engineer · <span><a href="https://metasteps.com" target="_blank" rel="noopener">Metasteps</a></span></h3>
+                <p>Architecting the core graphics systems behind Metasteps' products across mobile, WebGL and VR.
+                Pioneering rendering techniques and AI tooling to raise interactivity and visual fidelity,
+                mentoring engineers and artists on engine internals, and serving on the leadership team guiding
+                graphics across gameplay, tools and product strategy.</p>
+            </div>
+        </li>
+        <li>
+            <div class="tl-when">2021 – 2024</div>
+            <div class="tl-what">
+                <h3>Graphics Software Engineer · <span><a href="https://www.dataverse.gr" target="_blank" rel="noopener">Dataverse</a></span></h3>
+                <p>Extended and optimized Unity to ship high-performance products on mobile, WebGL and VR.
+                Built internal tools that streamlined asset workflows and build management, led the artist team's
+                asset creation and optimization pipeline, and mentored junior engineers.</p>
+            </div>
+        </li>
+        <li>
+            <div class="tl-when">2019 – 2021</div>
+            <div class="tl-what">
+                <h3>Independent R&amp;D · <span><a href="https://github.com/RaygenEngine/Raygen" target="_blank" rel="noopener">Raygen</a> &amp; <a href="https://github.com/RaygenEngine/Kaleido" target="_blank" rel="noopener">Kaleido</a></span></h3>
+                <p>Deep-dive years into photorealistic rendering and engine architecture, designing and building
+                the two open-source engines featured above. In parallel, served in the Hellenic Navy as a
+                Computers &amp; Networks specialist, contributing to a national security project.</p>
+            </div>
+        </li>
+        <li>
+            <div class="tl-when">2018 – 2019</div>
+            <div class="tl-what">
+                <h3>MSc Computer Science · <span><a href="https://www.aueb.gr/en" target="_blank" rel="noopener">AUEB, Athens</a></span></h3>
+                <p>Thesis: <em>Photorealistic Virtual Reality</em>, a from-scratch engine for
+                high-performance photorealistic VR with a stereoscopic ray tracer and lens-matched sampling.
+                Awarded a scholarship from Omilia Conversational AI as one of the top three students
+                of the programme.</p>
+            </div>
+        </li>
+    </ol>
+</section>
+
+<!-- ===================== ABOUT ===================== -->
+<section class="section" id="about">
+    <div class="section-head">
+        <h2><span class="section-index">03</span> About</h2>
+    </div>
+    <div class="about-grid">
+        <div class="about-text">
+            <p>I'm a graphics engineer with an MSc in Computer Science and over 5 years
+            in the industry, specialized in real-time rendering and game engine architecture. I've built game
+            engines from scratch in C++, with Vulkan, OpenGL and Direct3D backends, and shipped production
+            work in Unity across mobile, WebGL and VR, with years spent deep in physically based lighting,
+            ray tracing, path tracing and global illumination. I also really enjoy mentoring, and a good
+            part of my time goes into helping engineers and artists grow.</p>
+            <p>These days my work increasingly sits at the intersection of AI and 3D: language-model agents
+            that reason about and act inside virtual worlds, multi-agent systems, and intelligent pipelines
+            wired into real-time applications. I enjoy owning the full stack of a 3D system, from the shader
+            math, to the architecture that holds it all together, to the agents acting inside the world.</p>
+        </div>
+        <div class="skills">
+            <div class="skill-group">
+                <h4>Rendering &amp; Engines</h4>
+                <p>Real-time rendering · Game engine architecture · Ray &amp; path tracing · Global illumination · VR / AR</p>
+            </div>
+            <div class="skill-group">
+                <h4>Languages &amp; APIs</h4>
+                <p>C++ · C# · Unity · Vulkan · OpenGL · Direct3D · WebGL · GLSL · HLSL</p>
+            </div>
+            <div class="skill-group">
+                <h4>AI &amp; Agents</h4>
+                <p>AI agents · Multi-agent systems · LLM engineering · Embeddings</p>
+            </div>
+            <div class="skill-group">
+                <h4>Familiarity</h4>
+                <p>Python · JavaScript · Unreal Engine · Blender · n8n</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===================== CONTACT ===================== -->
+<section class="section contact" id="contact">
+    <div class="section-head">
+        <h2><span class="section-index">04</span> Contact</h2>
+    </div>
+    <p class="contact-lead">Interested in graphics, engines, or AI-driven 3D? Let's talk.</p>
+    <a class="contact-email" href="mailto:ioansmoschos@gmail.com">ioansmoschos@gmail.com</a>
+    <div class="contact-links">
+        <a href="https://linkedin.com/in/john-moschos-829bbb205" target="_blank" rel="noopener">LinkedIn ↗</a>
+        <a href="https://github.com/Renoras" target="_blank" rel="noopener">GitHub ↗</a>
+        <a href="pdf/cv.pdf" target="_blank" rel="noopener">CV ↗</a>
+    </div>
+</section>
+
+</main>
+
+<footer class="footer">
+    <p>© <span id="year"></span> John Moschos</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
