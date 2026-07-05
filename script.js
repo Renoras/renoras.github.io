@@ -53,14 +53,22 @@
            picture is instant (buffer and playback position come along)
            and nothing downloads twice. */
         var lbox = null, lbVideo = null, lbHome = null, lbCss = "", lbPushed = false;
+        var lbPlay = null, lbHoverPlay = null, lbHover = false;
+        function updatePlayIcon() {
+            var paused = lbVideo && lbVideo.paused;
+            if (lbPlay) lbPlay.style.display = paused ? "block" : "none";
+            if (lbHoverPlay) lbHoverPlay.style.display = (paused && lbHover) ? "flex" : "none";
+        }
         function closeLightbox(fromPop) {
             if (!lbox || !lbVideo) return;
             lbox.style.opacity = "0";
             lbox.style.pointerEvents = "none";
             lbVideo.style.cssText = lbCss;
             lbHome.appendChild(lbVideo);
-            lbVideo.play().catch(function () {});
+            lbHome.style.height = "";
+            lbVideo.play().catch(function () {});   // always unpaused back in the grid
             lbVideo = null;
+            updatePlayIcon();
             document.body.style.overflow = "";
             // consume the history entry we pushed on open, unless the
             // back button itself is what closed us
@@ -94,12 +102,44 @@
                     "border-radius:50%;color:#c8cdd6;font-size:20px;cursor:pointer;padding:0";
                 closeBtn.addEventListener("click", closeLightbox);
                 lbox.appendChild(closeBtn);
+                // paused indicator: a small pill at the bottom edge, so the
+                // frame itself stays fully visible for close inspection;
+                // non-interactive so taps go straight through to the video
+                lbPlay = document.createElement("div");
+                lbPlay.textContent = "⏸ paused — tap to resume";
+                lbPlay.style.cssText = "position:absolute;bottom:1.5vh;left:50%;z-index:1;" +
+                    "transform:translateX(-50%);padding:6px 16px;border-radius:99px;" +
+                    "background:rgba(6,7,10,.65);color:#9aa3b2;" +
+                    "font:500 12px 'JetBrains Mono',monospace;letter-spacing:.06em;" +
+                    "white-space:nowrap;display:none;pointer-events:none";
+                lbox.appendChild(lbPlay);
+                // centered play cue, but only while hovering the paused
+                // video (hover = intent to click, so covering is fine then)
+                lbHoverPlay = document.createElement("div");
+                lbHoverPlay.textContent = "▶";
+                lbHoverPlay.style.cssText = "position:absolute;top:50%;left:50%;z-index:1;" +
+                    "transform:translate(-50%,-50%);width:64px;height:64px;border-radius:50%;" +
+                    "background:rgba(6,7,10,.5);color:#e8ebf0;font-size:22px;" +
+                    "display:none;align-items:center;justify-content:center;" +
+                    "padding-left:5px;pointer-events:none";
+                lbox.appendChild(lbHoverPlay);
+                lbox.addEventListener("mousemove", function (e) {
+                    lbHover = !!lbVideo && e.target === lbVideo;
+                    updatePlayIcon();
+                });
+                lbox.addEventListener("mouseleave", function () {
+                    lbHover = false;
+                    updatePlayIcon();
+                });
                 document.body.appendChild(lbox);
             }
             lbVideo = v;
             lbHome = v.parentNode;
+            // freeze the card's height so the page doesn't reflow (the
+            // surrounding text used to pop when the video left its card)
+            lbHome.style.height = lbHome.getBoundingClientRect().height + "px";
             lbCss = v.style.cssText;
-            v.style.cssText = "max-width:96vw;max-height:92vh;width:auto;height:auto;border-radius:10px";
+            v.style.cssText = "max-width:96vw;max-height:92vh;width:auto;height:auto;border-radius:10px;cursor:pointer";
             lbox.appendChild(v);
             document.body.style.overflow = "hidden";
             // let the back button dismiss the overlay instead of the page
@@ -109,12 +149,20 @@
                 lbox.style.pointerEvents = "auto";
             });
             v.play().catch(function () {});
+            requestAnimationFrame(updatePlayIcon);
         }
 
         document.querySelectorAll(".project-media video").forEach(function (v) {
             vids.observe(v);
-            v.addEventListener("click", function () {
-                if (v === lbVideo) return;   // click inside the lightbox bubbles up and closes
+            v.addEventListener("click", function (e) {
+                if (v === lbVideo) {
+                    // inside the lightbox a tap toggles pause instead of closing
+                    e.stopPropagation();
+                    if (v.paused) v.play().catch(function () {});
+                    else v.pause();
+                    updatePlayIcon();
+                    return;
+                }
                 openLightbox(v);
             });
         });
