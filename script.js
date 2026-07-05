@@ -244,6 +244,11 @@
            sampled with manual trilinear filtering (bilinear in-slice via
            the sampler, lerp across the two nearest slices here) */
         "float sdfAtlas(sampler2D s, vec3 p, vec2 grid){",
+        // sample at 87% scale: the grid then covers a 15% larger world
+        // volume, so surfaces pushed outward by the ball or the morph
+        // bulge can no longer cross the grid walls (whose analytic
+        // outside-extension shows as a flat seam)
+        "    p *= 0.87;",
         "    float N = grid.x, C = grid.y;",
         "    vec3 g = clamp((p + 1.2) / 2.4, 0.0, 1.0);",
         "    float zi = g.z * (N - 1.0);",
@@ -255,7 +260,7 @@
         "    float e = mix(texture2D(s, uv0).r, texture2D(s, uv1).r, zi - z0);",
         "    float d = e*1.2 - 0.3;",
         "    vec3 q = abs(p) - vec3(1.2);",             // beyond the grid, add box distance
-        "    return d + length(max(q, vec3(0.0)));",
+        "    return (d + length(max(q, vec3(0.0)))) / 0.87;",
         "}",
 
         "float sdLink(vec3 p){",
