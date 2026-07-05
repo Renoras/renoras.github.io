@@ -68,10 +68,23 @@
           || canvas.getContext("experimental-webgl");
     if (!gl) { return; } // CSS gradient fallback remains
 
+    // paint the buffer dark before the (slow) shader compile: an opaque
+    // context's uninitialized buffer can flash white for a few frames
+    gl.clearColor(0.039, 0.047, 0.063, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
     // Explicit-LOD sampling lets the metal pick its reflection blur by
     // roughness, and gives the ultra-blurred backdrop. Near-universal
     // WebGL1 extension; without it everything still renders, just sharper.
     var hasLod = !!gl.getExtension("EXT_shader_texture_lod");
+
+    // Device class: phones get the same scene at phone-appropriate cost.
+    // Fewer march steps and fbm octaves (baked into the shader), lower
+    // DPR cap and render scale (applied in resize below).
+    var isMobile = matchMedia("(pointer: coarse)").matches
+                || Math.min(screen.width, screen.height) < 700;
+    var MARCH_STEPS = isMobile ? 40 : 64;
+    var FBM_OCT = isMobile ? 2 : 3;
 
     var VERT =
         "attribute vec2 aPos;" +
@@ -86,6 +99,8 @@
         "uniform float uSeed;",     // randomizes tumble + start angle per visit
         "uniform sampler2D uEnvTex;",  // current environment
         "uniform sampler2D uEnvTexB;", // next environment, crossfaded in
+        "uniform sampler2D uEnvBlur;",  // pre-blurred copies, used where
+        "uniform sampler2D uEnvBlurB;", // explicit-LOD sampling is unavailable
         "uniform float uEnvFade;",     // 0 = current, 1 = next
         "uniform float uEnvMix;",      // 0 until the first panorama loads
         // Two rotating mesh slots: JS binds whichever baked SDF atlases the
@@ -113,7 +128,7 @@
 
         "float fbm(vec2 p){",
         "    float a = 0.5, s = 0.0;",
-        "    for (int i = 0; i < 3; i++){ s += a*noise(p); p *= 2.03; a *= 0.5; }",
+        "    for (int i = 0; i < " + FBM_OCT + "; i++){ s += a*noise(p); p *= 2.03; a *= 0.5; }",
         "    return s;",
         "}",
 
@@ -132,8 +147,15 @@
 
         "vec3 envSample(vec3 d, float lod){",
         "    vec2 uv = eqUV(d);",
-        hasLod ? "    vec3 tex = mix(texture2DLodEXT(uEnvTex, uv, lod).rgb, texture2DLodEXT(uEnvTexB, uv, lod).rgb, uEnvFade);"
-               : "    vec3 tex = mix(texture2D(uEnvTex, uv).rgb, texture2D(uEnvTexB, uv).rgb, uEnvFade);",
+        // without the LOD extension, blurry lookups (backdrop, irradiance,
+        // satin reflections) come from a pre-blurred 64x32 copy instead
+        hasLod ? "    vec3 tex = texture2DLodEXT(uEnvTex, uv, lod).rgb;"
+               : "    vec3 tex = (lod > 2.5) ? texture2D(uEnvBlur, uv).rgb : texture2D(uEnvTex, uv).rgb;",
+        // sample the second panorama only while a crossfade is running
+        "    if (uEnvFade > 0.001){",
+        hasLod ? "        tex = mix(tex, texture2DLodEXT(uEnvTexB, uv, lod).rgb, uEnvFade);"
+               : "        tex = mix(tex, (lod > 2.5) ? texture2D(uEnvBlurB, uv).rgb : texture2D(uEnvTexB, uv).rgb, uEnvFade);",
+        "    }",
         "    return mix(envProc(d), tex * tex * 1.9, uEnvMix);",  // rough de-gamma for lighting
         "}",
 
@@ -253,12 +275,12 @@
         "    float aspect = uRes.x / uRes.y;",
         // landscape: sculpture right of the text; portrait: centered below it
         "    float fit = clamp((aspect - 0.85) / 0.5, 0.0, 1.0);",
-        "    vec2 OFF = vec2(0.62*fit, mix(-0.5, 0.02, fit));",
+        "    vec2 OFF = vec2(0.62*fit, mix(-0.36, 0.02, fit));",
 
         /* orbiting camera, steered by the mouse */
         "    float ca = uTime*0.08 + uSeed*6.2832 + uMouse.x*0.7;",
         "    float ce = 0.02 + uMouse.y*0.22;",  // near-horizontal orbit keeps verticals vertical
-        "    vec3 ro = vec3(sin(ca)*cos(ce), sin(ce), cos(ca)*cos(ce)) * mix(4.5, 3.9, fit);",
+        "    vec3 ro = vec3(sin(ca)*cos(ce), sin(ce), cos(ca)*cos(ce)) * mix(4.8, 3.9, fit);",
         "    vec3 fwd = normalize(-ro);",
         "    vec3 rgt = normalize(cross(vec3(0.0, 1.0, 0.0), fwd));",
         "    vec3 up  = cross(fwd, rgt);",
@@ -287,7 +309,7 @@
         "    if (disc > 0.0){",
         "        t = max(-b - sqrt(disc), 0.0);",
         "        float tExit = -b + sqrt(disc);",
-        "        for (int i = 0; i < 64; i++){",
+        "        for (int i = 0; i < " + MARCH_STEPS + "; i++){",
         "            d = map(ro + rd*t);",
         "            if (d < 0.0025 || t > tExit) break;",
         "            t += d;",
@@ -396,11 +418,17 @@
     var uEnvFade = gl.getUniformLocation(prog, "uEnvFade");
     gl.uniform1i(gl.getUniformLocation(prog, "uEnvTex"), 0);
     gl.uniform1i(gl.getUniformLocation(prog, "uEnvTexB"), 3);
+    var locBlur = gl.getUniformLocation(prog, "uEnvBlur");   // only live without the LOD ext
+    var locBlurB = gl.getUniformLocation(prog, "uEnvBlurB");
+    if (locBlur) gl.uniform1i(locBlur, 5);
+    if (locBlurB) gl.uniform1i(locBlurB, 6);
     gl.uniform1f(uEnvMix, 0);
     gl.uniform1f(uEnvFade, 0);
     var seedM = location.search.match(/seed=([\d.]+)/);
     var seedVal = seedM ? parseFloat(seedM[1]) : Math.random();
     gl.uniform1f(gl.getUniformLocation(prog, "uSeed"), seedVal);
+
+    var envTexBlur = {};
 
     function ensureEnv(idx) {
         if (envTex[idx] || envLoading[idx]) return;
@@ -417,6 +445,25 @@
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
             envTex[idx] = tex;
+            if (!hasLod) {
+                // no explicit-LOD sampling on this GPU: bake the blur by
+                // downsampling to 64x32 (two steps for quality) — bilinear
+                // magnification of that IS the blurred backdrop
+                var c1 = document.createElement("canvas");
+                c1.width = 256; c1.height = 128;
+                c1.getContext("2d").drawImage(img, 0, 0, 256, 128);
+                var c2 = document.createElement("canvas");
+                c2.width = 64; c2.height = 32;
+                c2.getContext("2d").drawImage(c1, 0, 0, 64, 32);
+                var bt = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_2D, bt);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, c2);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                envTexBlur[idx] = bt;
+            }
             wake();
         };
         img.src = ENVS[idx];
@@ -440,11 +487,19 @@
         if (curReady) {
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, envTex[cur]);
+            if (!hasLod && envTexBlur[cur]) {
+                gl.activeTexture(gl.TEXTURE5);
+                gl.bindTexture(gl.TEXTURE_2D, envTexBlur[cur]);
+            }
         }
         var fade = 0;
         if (envStep !== 0 && envTex[nxt]) {
             gl.activeTexture(gl.TEXTURE3);
             gl.bindTexture(gl.TEXTURE_2D, envTex[nxt]);
+            if (!hasLod && envTexBlur[nxt]) {
+                gl.activeTexture(gl.TEXTURE6);
+                gl.bindTexture(gl.TEXTURE_2D, envTexBlur[nxt]);
+            }
             fade = smooth01((into - (envPhaseDur - ENV_FADE)) / ENV_FADE);
         }
         gl.uniform1f(uEnvMix, curReady ? 1 : 0);
@@ -559,12 +614,14 @@
     var uTime = gl.getUniformLocation(prog, "uTime");
     var uMouse = gl.getUniformLocation(prog, "uMouse");
 
-    // Near-native render (the scene is a cheap single-object march);
-    // the adaptive scaler below is the backstop for weak GPUs.
-    var SCALE = 0.9;
-    var SCALE_MIN = 0.5;
+    // Near-native render on desktop; phones start at a fraction of it
+    // (small screens hide the difference and thermals matter more).
+    // The adaptive scaler below is the backstop either way.
+    var SCALE = isMobile ? 0.55 : 0.9;
+    var SCALE_MIN = isMobile ? 0.35 : 0.5;
+    var DPR_CAP = isMobile ? 1.5 : 2;
     function resize() {
-        var dpr = Math.min(devicePixelRatio || 1, 2);
+        var dpr = Math.min(devicePixelRatio || 1, DPR_CAP);
         var w = Math.max(1, Math.floor(canvas.clientWidth * dpr * SCALE));
         var h = Math.max(1, Math.floor(canvas.clientHeight * dpr * SCALE));
         if (canvas.width !== w || canvas.height !== h) {
@@ -608,7 +665,8 @@
         if (dt <= 0 || dt > 250) { emaDt = 0; sampled = 0; return; } // resumed from pause
         emaDt = emaDt ? emaDt * 0.95 + dt * 0.05 : dt;
         sampled++;
-        if (sampled > 90 && emaDt > 24 && SCALE > SCALE_MIN) {
+        // react in ~1s on phones, ~1.5s on desktop
+        if (sampled > (isMobile ? 45 : 90) && emaDt > 24 && SCALE > SCALE_MIN) {
             SCALE = Math.max(SCALE_MIN, SCALE - 0.12);
             emaDt = 0; sampled = 0;
         }
@@ -638,6 +696,7 @@
         gl.uniform1f(uTime, timeSec);
         gl.uniform2f(uMouse, mouse.x, mouse.y);
         gl.drawArrays(gl.TRIANGLES, 0, 3);
+        canvas.classList.add("ready");   // fade in over the CSS fallback
         if (!reducedMotion && heroVisible && !document.hidden) {
             raf = requestAnimationFrame(frame);
         }
