@@ -44,8 +44,7 @@
         <p class="hero-kicker">Athens, Greece</p>
         <h1>John Moschos</h1>
         <p class="hero-role">Graphics Engineer</p>
-        <p class="hero-tagline">Real-time rendering, ray tracing &amp; game engine architecture.
-        Lately, AI agents that reason about and act inside 3D worlds.</p>
+        <p class="hero-tagline">Rendering, game engines &amp; AI agents in 3D worlds.</p>
         <div class="hero-actions">
             <a class="btn btn-primary" href="#projects">Selected projects</a>
             <a class="btn btn-ghost" href="mailto:ioansmoschos@gmail.com">Get in touch</a>
@@ -60,7 +59,7 @@
 <section class="section" id="projects">
     <div class="section-head">
         <h2><span class="section-index">01</span> Selected Projects</h2>
-        <p>Engines, renderers and techniques I've built. Every clip below is captured from my own code.</p>
+        <p>Passion projects and coursework that have shaped my path.</p>
     </div>
 
     <!-- Raygen -->
@@ -70,11 +69,10 @@
         </div>
         <div class="project-body">
             <h3>Raygen Engine</h3>
-            <p class="project-sub">A game engine built from scratch to explore real-time ray tracing</p>
-            <p>Raygen is a two-person, from-scratch engine written in modern C++ with Vulkan, designed
-            as a testbed for hybrid rendering: a deferred rasterization pipeline combined with
-            hardware ray tracing for shadows, reflections and global illumination. Building it end to end
-            meant owning everything from the render graph and asset pipeline to the ECS and editor tooling.</p>
+            <p class="project-sub">A game engine built to explore real-time ray tracing</p>
+            <p>A two-person engine written from scratch in modern C++ with Vulkan. A testbed for hybrid
+            rendering: deferred rasterization plus hardware ray tracing for shadows, reflections and
+            global illumination, built end to end from the render graph to the ECS and editor tooling.</p>
             <ul class="tags">
                 <li>C++20</li><li>Vulkan</li><li>GLSL</li><li>Ray Tracing</li><li>ECS</li><li>CMake</li>
             </ul>
@@ -94,7 +92,7 @@
             <p class="project-sub">Unbiased Monte Carlo reference renderer inside Raygen</p>
             <p>A single-path Monte Carlo pathtracer used as Raygen's ground-truth renderer.
             Next event estimation and multiple importance sampling drive fast convergence. Layered diffuse
-            and specular BRDFs/BTDFs cover a wide material range, and Russian roulette termination keeps the
+            and specular BRDFs/BTDFs cover a wide material range. Russian roulette termination keeps the
             estimator unbiased while culling insignificant paths.</p>
             <ul class="tags">
                 <li>Raygen Engine</li><li>Path Tracing</li><li>NEE</li><li>MIS</li><li>BSDF</li>
@@ -118,7 +116,7 @@
             point method: the reflection vector is snapped to the closest point on the light mesh, giving a
             convincing highlight from arbitrary emitter shapes at real-time cost.</p>
             <ul class="tags">
-                <li>Raygen Engine</li><li>Ray Tracing</li><li>SVGF</li><li>Representative Point</li>
+                <li>Raygen Engine</li><li>Ray Tracing</li><li>SVGF</li><li>Denoising</li>
             </ul>
             <div class="project-links">
                 <a href="https://github.com/RaygenEngine/Raygen/tree/master/assets/engine-data/spv/raytrace/arealights" target="_blank" rel="noopener">Shading ↗</a>
@@ -180,7 +178,7 @@
             <p>Kaleido lets you register multiple renderers (OpenGL, Vulkan, D3D11, or an offline pathtracer)
             and swap them at runtime against the same scene, making it ideal for comparing a real-time
             approximation against ground truth. It provides multithreaded asset loading with automatic caching,
-            an extensible loader system, and an ImGui editor over a scenegraph.</p>
+            an extensible loader system and an ImGui editor over a scenegraph.</p>
             <ul class="tags">
                 <li>C++17</li><li>Vulkan</li><li>OpenGL</li><li>D3D11</li><li>GLSL</li><li>HLSL</li>
             </ul>
@@ -201,7 +199,7 @@
             <p>VR lens distortion means peripheral pixels contribute far less than central ones, so why trace
             them at full density? This technique varies the ray-generation rate across the image via an
             adjustable mask, cutting the ray budget for stereoscopic path tracing while preserving perceived
-            quality. Built on OptiX with the Oculus SDK as part of a from-scratch VR ray tracing engine.</p>
+            quality. Built on OptiX with the Oculus SDK as part of a custom VR ray tracing engine.</p>
             <ul class="tags">
                 <li>C++14</li><li>OptiX</li><li>Oculus SDK</li><li>VR</li><li>Ray Tracing</li>
             </ul>
@@ -241,10 +239,10 @@
         <div class="project-body">
             <h3>Asteroid Blaster <span class="badge">Best Graphics Project 2016</span></h3>
             <p class="project-sub">From the graphics course that introduced me to the field</p>
-            <p>A game a few classmates and I built for a graduate graphics course. I worked on game design, special abilities and
-            their audiovisual feedback, actor movement and physics, spawning systems and boss AI, and on
-            the rendering side added soft shadows, depth of field, bloom and normal mapping. We had a lot
-            of fun packing in more than the assignment asked for.</p>
+            <p>A game built with a few classmates for a graduate graphics course. Contributions here spanned game
+            design, special abilities and their audiovisual feedback, actor movement and physics, spawning
+            systems and boss AI, plus rendering work: soft shadows, depth of field, bloom and normal mapping.
+            The team took it well beyond what the assignment required.</p>
             <ul class="tags">
                 <li>C++11</li><li>OpenGL</li><li>GLSL</li><li>Gameplay</li>
             </ul>
@@ -293,7 +291,7 @@
             <div class="tl-when">2018 – 2019</div>
             <div class="tl-what">
                 <h3>MSc Computer Science · <span><a href="https://www.aueb.gr/en" target="_blank" rel="noopener">AUEB</a></span></h3>
-                <p>Thesis: <em>Photorealistic Virtual Reality</em>, a from-scratch engine for
+                <p>Thesis: <em>Photorealistic Virtual Reality</em>, a custom engine for
                 high-performance photorealistic VR with a stereoscopic ray tracer and lens-matched sampling.
                 Awarded a scholarship from Omilia Conversational AI as one of the top three students
                 of the programme.</p>
@@ -311,14 +309,12 @@
         <div class="about-text">
             <p>I'm a graphics engineer with an MSc in Computer Science and over 5 years
             in the industry, specialized in real-time rendering and game engine architecture. I've built game
-            engines from scratch in C++, with Vulkan, OpenGL and Direct3D backends, and shipped production
-            work in Unity across mobile, WebGL and VR, with years spent deep in physically based lighting,
-            ray tracing, path tracing and global illumination. I also really enjoy mentoring, and a good
-            part of my time goes into helping engineers and artists grow.</p>
-            <p>These days my work increasingly sits at the intersection of AI and 3D: language-model agents
-            that reason about and act inside virtual worlds, multi-agent systems, and intelligent pipelines
-            wired into real-time applications. I enjoy owning the full stack of a 3D system, from the shader
-            math, to the architecture that holds it all together, to the agents acting inside the world.</p>
+            engines from scratch in C++, with Vulkan, OpenGL and Direct3D backends. Much of that time has gone
+            deep into physically based lighting, ray tracing, path tracing and global illumination. I've also
+            shipped commercial projects in Unity across mobile, WebGL and VR. These days my work
+            increasingly sits where AI meets real-time graphics: agents that reason about and act inside 3D worlds.
+            Beyond the technical side, I care about
+            mentoring, passing on what I have learned and helping the engineers and artists around me grow and reach their goals.</p>
         </div>
         <div class="skills">
             <div class="skill-group">
