@@ -24,6 +24,48 @@
         nav.classList.toggle("scrolled", scrollY > 12);
     }, { passive: true });
 
+    /* ---------------- typewriter hero tagline ---------------- */
+    (function () {
+        var el = document.getElementById("tagline");
+        if (!el) return;
+        var phrases = [
+            "Real-time rendering and PBR material workflows",
+            "Path tracing, ray tracing and hybrid rendering",
+            "Global illumination and light transport",
+            "Game engine architecture and optimization",
+            "AI agents that reason and act inside 3D worlds",
+            "Multi-agent systems and LLM engineering",
+            "Helping engineers and artists grow",
+            "Shipped across mobile, WebGL, VR and AR with Unity",
+            "The scene behind this text is live and follows your input"
+        ];
+        // reduced-motion users keep the static anchor phrase, no caret
+        if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+        var TYPE = 48, ERASE = 24, HOLD = 1900, PAUSE = 480;
+        var pi = 0, ci = 0, deleting = false;
+        el.textContent = "";
+        el.classList.add("typing");
+
+        function tick() {
+            var full = phrases[pi];
+            if (!deleting) {
+                el.textContent = full.slice(0, ++ci);
+                if (ci === full.length) { deleting = true; return setTimeout(tick, HOLD); }
+                setTimeout(tick, TYPE);
+            } else {
+                el.textContent = full.slice(0, --ci);
+                if (ci === 0) {
+                    deleting = false;
+                    pi = (pi + 1) % phrases.length;
+                    return setTimeout(tick, PAUSE);
+                }
+                setTimeout(tick, ERASE);
+            }
+        }
+        setTimeout(tick, 600);   // brief beat before the first phrase types in
+    })();
+
     /* ---------------- project reveal + video playback ---------------- */
     var projects = document.querySelectorAll(".project");
     if ("IntersectionObserver" in window) {

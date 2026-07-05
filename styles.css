@@ -164,6 +164,21 @@ h1, h2, h3, h4 { font-family: var(--font-head); font-weight: 600; line-height: 1
     color: var(--text-dim);
     max-width: 34rem;
     margin: 1.4rem auto 0;
+    min-height: 2.9em;   /* reserve up to two lines so the buttons below never jump */
+}
+/* typewriter caret, only while the JS rotator is driving the text */
+.hero-tagline.typing::after {
+    content: "";
+    display: inline-block;
+    width: .5ch;
+    height: 1.05em;
+    margin-left: 2px;
+    vertical-align: -0.15em;
+    background: currentColor;
+    animation: caret-blink 1s steps(1) infinite;
+}
+@keyframes caret-blink {
+    50% { opacity: 0; }
 }
 
 .hero-actions {
