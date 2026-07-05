@@ -740,13 +740,9 @@
     // touch steers the satellite too: listeners stay passive so drags
     // still scroll the page, but the ball chases the fingertip. The
     // camera sway is damped on touch so scrolling doesn't rock the scene.
-    // touch: dragging across rotates the scene noticeably (horizontal),
-    // while vertical stays damped so scroll gestures don't rock the camera
-    if (isMobile) {
-        gl.uniform2f(gl.getUniformLocation(prog, "uCamAmt"), 1.1, 0.18);
-    } else {
-        gl.uniform2f(gl.getUniformLocation(prog, "uCamAmt"), 1.0, 1.0);
-    }
+    // full camera sway on mouse, damped on touch so scroll drags don't
+    // rock the scene
+    gl.uniform1f(gl.getUniformLocation(prog, "uCamAmt"), isMobile ? 0.4 : 1.0);
     function pointTo(e) {
         // coordinates relative to the hero canvas, not the window: once
         // scrolled, the two differ, and a cursor outside the hero must
