@@ -408,6 +408,32 @@ h1, h2, h3, h4 { font-family: var(--font-head); font-weight: 600; line-height: 1
     font-size: .92rem;
 }
 
+/* ---------------- video lightbox ---------------- */
+
+.lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(6, 7, 10, .94);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease;
+    cursor: zoom-out;
+}
+.lightbox.open { opacity: 1; pointer-events: auto; }
+
+.lightbox video {
+    /* fit the viewport in either orientation: wide clips fill the width,
+       tall clips fill the height, never any zooming */
+    max-width: 96vw;
+    max-height: 92vh;
+    border-radius: 10px;
+    box-shadow: 0 30px 90px -20px rgba(0, 0, 0, .8);
+}
+
 /* ---------------- footer ---------------- */
 
 .footer {

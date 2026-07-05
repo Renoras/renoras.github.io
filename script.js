@@ -47,8 +47,57 @@
                 else { v.pause(); }
             });
         }, { rootMargin: "200px 0px", threshold: 0.01 });
+        /* lightbox: tap a clip to view it fit to the viewport, whatever
+           the orientation — no zooming needed. Tap or Esc dismisses.
+           The inline video element itself moves into the overlay, so the
+           picture is instant (buffer and playback position come along)
+           and nothing downloads twice. */
+        var lbox = null, lbVideo = null, lbHome = null, lbCss = "";
+        function closeLightbox() {
+            if (!lbox || !lbVideo) return;
+            lbox.style.opacity = "0";
+            lbox.style.pointerEvents = "none";
+            lbVideo.style.cssText = lbCss;
+            lbHome.appendChild(lbVideo);
+            lbVideo.play().catch(function () {});
+            lbVideo = null;
+            document.body.style.overflow = "";
+        }
+        function openLightbox(v) {
+            if (!lbox) {
+                lbox = document.createElement("div");
+                lbox.className = "lightbox";
+                // critical styles inline: the overlay must work even if a
+                // stale cached stylesheet lacks the .lightbox rules
+                lbox.style.cssText = "position:fixed;inset:0;z-index:50;" +
+                    "display:flex;align-items:center;justify-content:center;" +
+                    "background:rgba(6,7,10,.94);cursor:zoom-out;" +
+                    "opacity:0;transition:opacity .25s ease;pointer-events:none";
+                lbox.addEventListener("click", closeLightbox);
+                addEventListener("keydown", function (e) {
+                    if (e.key === "Escape") closeLightbox();
+                });
+                document.body.appendChild(lbox);
+            }
+            lbVideo = v;
+            lbHome = v.parentNode;
+            lbCss = v.style.cssText;
+            v.style.cssText = "max-width:96vw;max-height:92vh;width:auto;height:auto;border-radius:10px";
+            lbox.appendChild(v);
+            document.body.style.overflow = "hidden";
+            requestAnimationFrame(function () {
+                lbox.style.opacity = "1";
+                lbox.style.pointerEvents = "auto";
+            });
+            v.play().catch(function () {});
+        }
+
         document.querySelectorAll(".project-media video").forEach(function (v) {
             vids.observe(v);
+            v.addEventListener("click", function () {
+                if (v === lbVideo) return;   // click inside the lightbox bubbles up and closes
+                openLightbox(v);
+            });
         });
     } else {
         projects.forEach(function (p) { p.classList.add("visible"); });
@@ -63,12 +112,19 @@
        prefers-reduced-motion with a single frame.
        ============================================================ */
 
-    // Phones and tablets skip the WebGL hero entirely: they keep the clean
-    // CSS gradient, spend no GPU or battery, and never see a slow compile.
-    // Touch-first devices identify by pointer/hover capability.
+    // Touch-first devices (pointer/hover capability) run the hero at the
+    // aggressive lq tier: low scale and DPR, few steps, permanent 30fps
+    // idle cap. Deferred init keeps their first paint instant.
     var isMobile = matchMedia("(pointer: coarse)").matches
                 || matchMedia("(hover: none)").matches;
-    if (isMobile) { return; }
+
+    // Deferred init: the shader compile takes hundreds of milliseconds and
+    // must never block the page's first paint (a blocked first paint is a
+    // white screen). Two rAFs guarantee at least one composited frame of
+    // the dark CSS hero before any GL work starts.
+    requestAnimationFrame(function () { requestAnimationFrame(initHero); });
+
+    function initHero() {
 
     var canvas = document.getElementById("gl");
     var gl = canvas.getContext("webgl", { antialias: false, alpha: false })
@@ -85,8 +141,13 @@
     // WebGL1 extension; without it everything still renders, just sharper.
     var hasLod = !!gl.getExtension("EXT_shader_texture_lod");
 
-    var MARCH_STEPS = 64;
-    var FBM_OCT = 3;
+    // Quality tiers. The default runs the optimized path: fewer march
+    // steps and noise octaves at near-native scale, visually a match for
+    // ?q=hq at a fraction of the cost. ?q=lq is the aggressive preset.
+    var qM = location.search.match(/[?&]q=(hq|lq)/);
+    var QUALITY = qM ? qM[1] : (isMobile ? "lq" : "mid");
+    var MARCH_STEPS = QUALITY === "hq" ? 64 : 36;
+    var FBM_OCT = QUALITY === "hq" ? 3 : QUALITY === "lq" ? 1 : 2;
 
     var VERT =
         "attribute vec2 aPos;" +
@@ -618,9 +679,9 @@
 
     // Near-native render (the scene is a cheap single-object march);
     // the adaptive scaler below is the backstop for weak GPUs.
-    var SCALE = 0.9;
-    var SCALE_MIN = 0.5;
-    var DPR_CAP = 2;
+    var SCALE = QUALITY === "hq" ? 0.9 : QUALITY === "lq" ? 0.55 : 0.72;
+    var SCALE_MIN = QUALITY === "lq" ? 0.35 : 0.45;
+    var DPR_CAP = QUALITY === "hq" ? 2 : QUALITY === "lq" ? 1.5 : 1.75;
     function resize() {
         var dpr = Math.min(devicePixelRatio || 1, DPR_CAP);
         var w = Math.max(1, Math.floor(canvas.clientWidth * dpr * SCALE));
@@ -675,9 +736,23 @@
         }
     }
 
+    var lastRender = 0;
+
     function frame(now) {
         raf = null;
-        adapt(now);
+        // idle cap: ~30fps is plenty for the slow ambient motion, and it
+        // roughly halves-to-quarters GPU busy time (especially on high
+        // refresh monitors). Mouse interaction restores full refresh.
+        var active = (now - lastMove < 1200);
+        if (!active && now - lastRender < 31) {
+            if (!reducedMotion && heroVisible && !document.hidden) {
+                raf = requestAnimationFrame(frame);
+            }
+            return;
+        }
+        lastRender = now;
+        if (active) { adapt(now); }
+        else { emaDt = 0; sampled = 0; lastNow = now; } // don't let capped pacing trip the scaler
         resize();
         mouse.x += (target.x - mouse.x) * 0.04;
         mouse.y += (target.y - mouse.y) * 0.04;
@@ -720,4 +795,6 @@
     document.addEventListener("visibilitychange", wake);
 
     wake(); // reduced-motion users still get one rendered frame
+
+    } // initHero
 })();

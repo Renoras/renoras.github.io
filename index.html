@@ -3,19 +3,27 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
     <title>John Moschos · Graphics Engineer</title>
     <meta name="description" content="John Moschos, Graphics Engineer. Real-time rendering, ray tracing, game engine architecture, and AI-driven 3D systems.">
     <meta property="og:title" content="John Moschos · Graphics Engineer">
     <meta property="og:description" content="Real-time rendering, ray tracing, game engine architecture, and AI-driven 3D systems.">
     <meta property="og:url" content="https://jmoschos.me/">
     <meta property="og:type" content="website">
-    <style>html{background:#0a0c10;color:#e8ebf0}</style>
+    <style>
+        :root{color-scheme:dark}
+        html{background:#0a0c10;color:#e8ebf0}
+        /* critical: the WebGL canvas stays invisible until its first
+           rendered frame, so it can never flash white while loading */
+        #gl{opacity:0;transition:opacity .6s ease}
+        #gl.ready{opacity:1}
+    </style>
     <link rel="icon" href="favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
-    <link href="styles.css" rel="stylesheet">
+    <link href="styles.css?v=3" rel="stylesheet">
 </head>
 <body>
 
@@ -284,7 +292,7 @@
         <li>
             <div class="tl-when">2018 – 2019</div>
             <div class="tl-what">
-                <h3>MSc Computer Science · <span><a href="https://www.aueb.gr/en" target="_blank" rel="noopener">AUEB, Athens</a></span></h3>
+                <h3>MSc Computer Science · <span><a href="https://www.aueb.gr/en" target="_blank" rel="noopener">AUEB</a></span></h3>
                 <p>Thesis: <em>Photorealistic Virtual Reality</em>, a from-scratch engine for
                 high-performance photorealistic VR with a stereoscopic ray tracer and lens-matched sampling.
                 Awarded a scholarship from Omilia Conversational AI as one of the top three students
@@ -353,6 +361,6 @@
     <p>© <span id="year"></span> John Moschos</p>
 </footer>
 
-<script src="script.js"></script>
+<script src="script.js?v=3"></script>
 </body>
 </html>
