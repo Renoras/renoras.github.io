@@ -63,6 +63,13 @@
        prefers-reduced-motion with a single frame.
        ============================================================ */
 
+    // Phones and tablets skip the WebGL hero entirely: they keep the clean
+    // CSS gradient, spend no GPU or battery, and never see a slow compile.
+    // Touch-first devices identify by pointer/hover capability.
+    var isMobile = matchMedia("(pointer: coarse)").matches
+                || matchMedia("(hover: none)").matches;
+    if (isMobile) { return; }
+
     var canvas = document.getElementById("gl");
     var gl = canvas.getContext("webgl", { antialias: false, alpha: false })
           || canvas.getContext("experimental-webgl");
@@ -78,13 +85,8 @@
     // WebGL1 extension; without it everything still renders, just sharper.
     var hasLod = !!gl.getExtension("EXT_shader_texture_lod");
 
-    // Device class: phones get the same scene at phone-appropriate cost.
-    // Fewer march steps and fbm octaves (baked into the shader), lower
-    // DPR cap and render scale (applied in resize below).
-    var isMobile = matchMedia("(pointer: coarse)").matches
-                || Math.min(screen.width, screen.height) < 700;
-    var MARCH_STEPS = isMobile ? 40 : 64;
-    var FBM_OCT = isMobile ? 2 : 3;
+    var MARCH_STEPS = 64;
+    var FBM_OCT = 3;
 
     var VERT =
         "attribute vec2 aPos;" +
@@ -614,12 +616,11 @@
     var uTime = gl.getUniformLocation(prog, "uTime");
     var uMouse = gl.getUniformLocation(prog, "uMouse");
 
-    // Near-native render on desktop; phones start at a fraction of it
-    // (small screens hide the difference and thermals matter more).
-    // The adaptive scaler below is the backstop either way.
-    var SCALE = isMobile ? 0.55 : 0.9;
-    var SCALE_MIN = isMobile ? 0.35 : 0.5;
-    var DPR_CAP = isMobile ? 1.5 : 2;
+    // Near-native render (the scene is a cheap single-object march);
+    // the adaptive scaler below is the backstop for weak GPUs.
+    var SCALE = 0.9;
+    var SCALE_MIN = 0.5;
+    var DPR_CAP = 2;
     function resize() {
         var dpr = Math.min(devicePixelRatio || 1, DPR_CAP);
         var w = Math.max(1, Math.floor(canvas.clientWidth * dpr * SCALE));
@@ -628,6 +629,9 @@
             canvas.width = w;
             canvas.height = h;
             gl.viewport(0, 0, w, h);
+            // resizing wipes the buffer to driver-default (white on some
+            // GPUs): repaint it dark before the next composite
+            gl.clear(gl.COLOR_BUFFER_BIT);
         }
     }
     addEventListener("resize", resize);
@@ -665,8 +669,7 @@
         if (dt <= 0 || dt > 250) { emaDt = 0; sampled = 0; return; } // resumed from pause
         emaDt = emaDt ? emaDt * 0.95 + dt * 0.05 : dt;
         sampled++;
-        // react in ~1s on phones, ~1.5s on desktop
-        if (sampled > (isMobile ? 45 : 90) && emaDt > 24 && SCALE > SCALE_MIN) {
+        if (sampled > 90 && emaDt > 24 && SCALE > SCALE_MIN) {
             SCALE = Math.max(SCALE_MIN, SCALE - 0.12);
             emaDt = 0; sampled = 0;
         }
