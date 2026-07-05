@@ -176,8 +176,8 @@
         "uniform float uIdA;",      // shape codes: 0 sphere, 1 torus, 2 octa, 3 mesh A, 4 mesh B
         "uniform float uIdB;",
         "uniform float uMorph;",    // 0 = shape A, 1 = shape B
-        "uniform float uGrab;",     // 0 = satellites orbit the form, 1 = one rides the cursor
-        "uniform float uWhich;",    // which satellite answers the call (re-rolled per approach)
+        "uniform float uWA;",       // per-satellite cursor pull, eased independently in JS
+        "uniform float uWB;",       // so a relay is two calm glides, never a snap
         "uniform float uCamAmt;",   // how much the pointer sways the camera (damped on touch)
         "vec3 gMouse3;",            // cursor unprojected to the sculpture's depth plane
 
@@ -309,9 +309,13 @@
         "    else {",
         // inflate mid-morph: barely-overlapping shapes would otherwise
         // vanish (the mixed field goes positive everywhere) — the bulge
-        // bridges them so one form always melts into the next
-        "        d = mix(shapeSD(q, uIdA), shapeSD(q, uIdB), uMorph)",
-        "          - uMorph*(1.0 - uMorph)*1.3;",
+        // bridges them so one form always melts into the next. It fades
+        // out toward the SDF grid boundary, where subtracting from the
+        // approximate outside field would bloom a box-shaped ghost shell.
+        "        float bulge = uMorph*(1.0 - uMorph)*1.3;",
+        "        vec3 aq = abs(q);",
+        "        bulge *= 1.0 - smoothstep(0.95, 1.18, max(aq.x, max(aq.y, aq.z)));",
+        "        d = mix(shapeSD(q, uIdA), shapeSD(q, uIdB), uMorph) - bulge;",
         "    }",
 
         // satellites on true spherical orbits (normalized direction, fixed
@@ -319,11 +323,14 @@
         // While the pointer is active, one of them (picked at random per
         // approach) leaves its orbit and rides the cursor with a little
         // bob, melting into whatever it sweeps across; idle, it goes home.
-        "    vec3 held = gMouse3 + 0.10*vec3(sin(uTime*1.7), cos(uTime*2.1), sin(uTime*1.3));",
+        // one satellite (chosen while the pull is slack, so never mid-ride)
+        // bends out of its orbit toward the cursor on a slow bloom and
+        // glides home on release; the other keeps its orbit undisturbed
+        "    vec3 held = gMouse3 + 0.08*vec3(sin(uTime*0.9), cos(uTime*1.1), sin(uTime*0.7));",
         "    vec3 s1 = normalize(vec3(sin(uTime*0.50), cos(uTime*0.37), sin(uTime*0.43))) * 1.30;",
         "    vec3 s2 = normalize(vec3(cos(uTime*0.31), sin(uTime*0.53), cos(uTime*0.41))) * 1.42;",
-        "    s1 = mix(s1, held, uGrab * (1.0 - uWhich));",
-        "    s2 = mix(s2, held, uGrab * uWhich);",
+        "    s1 = mix(s1, held, uWA);",
+        "    s2 = mix(s2, held, uWB);",
         "    d = smin(d, length(p - s1) - 0.26, 0.45);",
         "    d = smin(d, length(p - s2) - 0.20, 0.45);",
         "    return d;",
@@ -702,27 +709,43 @@
     resize();
 
     var mouse = { x: 0, y: 0 }, target = { x: 0, y: 0 };
-    var uGrab = gl.getUniformLocation(prog, "uGrab");
-    var uWhich = gl.getUniformLocation(prog, "uWhich");
+    var uWA = gl.getUniformLocation(prog, "uWA");
+    var uWB = gl.getUniformLocation(prog, "uWB");
     var which = Math.random() < 0.5 ? 0 : 1;
-    var whichTarget = which, prevProx = 0;
-    var grab = 0, lastMove = -1e9;
+    var wA = 0, wB = 0, prevGT = 0, lastMove = -1e9;
     // touch steers the satellite too: listeners stay passive so drags
     // still scroll the page, but the ball chases the fingertip. The
     // camera sway is damped on touch so scrolling doesn't rock the scene.
-    gl.uniform1f(gl.getUniformLocation(prog, "uCamAmt"), isMobile ? 0.4 : 1.0);
+    // touch: dragging across rotates the scene noticeably (horizontal),
+    // while vertical stays damped so scroll gestures don't rock the camera
+    if (isMobile) {
+        gl.uniform2f(gl.getUniformLocation(prog, "uCamAmt"), 1.1, 0.18);
+    } else {
+        gl.uniform2f(gl.getUniformLocation(prog, "uCamAmt"), 1.0, 1.0);
+    }
     function pointTo(e) {
-        target.x = (e.clientX / innerWidth) * 2 - 1;
-        target.y = -((e.clientY / innerHeight) * 2 - 1);
+        // coordinates relative to the hero canvas, not the window: once
+        // scrolled, the two differ, and a cursor outside the hero must
+        // not steer the scene. Leaving the canvas is an instant disengage.
+        var r = canvas.getBoundingClientRect();
+        var x = ((e.clientX - r.left) / r.width) * 2 - 1;
+        var y = -(((e.clientY - r.top) / r.height) * 2 - 1);
+        if (x < -1.05 || x > 1.05 || y < -1.05 || y > 1.05) {
+            lastMove = -1e9;
+            return false;
+        }
+        target.x = x;
+        target.y = y;
         lastMove = performance.now();
+        return true;
     }
     addEventListener("pointermove", pointTo, { passive: true });
     addEventListener("pointerdown", function (e) {
-        pointTo(e);
-        // every touch is its own gesture: re-roll the companion on the
-        // spot, biased toward switching so consecutive taps feel alive
-        if (e.pointerType === "touch") {
-            whichTarget = Math.random() < 0.75 ? 1 - whichTarget : whichTarget;
+        // a tap is a discrete gesture: re-roll the companion each time
+        // with a fair coin. Per-ball easing keeps any changeover a calm
+        // overlapping relay rather than a snap.
+        if (pointTo(e) && e.pointerType === "touch") {
+            which = Math.random() < 0.5 ? 0 : 1;
         }
     }, { passive: true });
     // debug: ?grab plants the cursor metaball up-right of the sculpture
@@ -784,21 +807,23 @@
         var fit = Math.min(Math.max((aspect - 0.85) / 0.5, 0), 1);
         var dxm = mouse.x * aspect - 0.62 * fit;
         var dym = mouse.y - (0.02 * fit - 0.5 * (1 - fit));
-        var prox = Math.min(Math.max((1.35 - Math.sqrt(dxm*dxm + dym*dym)) / 0.45, 0), 1);
+        // engagement zone: the sculpture plus a small halo. Leaving it is
+        // a real disengage, so the next approach reliably rolls the dice.
+        var prox = Math.min(Math.max((0.95 - Math.sqrt(dxm*dxm + dym*dym)) / 0.35, 0), 1);
         var grabTarget = (now - lastMove < 2200) ? prox : 0;
-        // every fresh engagement re-rolls which satellite answers (keyed
-        // to engagement, not raw proximity, so touch taps re-roll too:
-        // a finger's position lingers after lifting, proximity doesn't
-        // fall, but the idle timeout still re-arms the edge). Easing the
-        // choice lets one ball hand the cursor to the other mid-air.
-        if (grabTarget > 0.05 && prevProx <= 0.05) {
-            whichTarget = Math.random() < 0.5 ? 0 : 1;
+        // every fresh engagement re-rolls the companion. Each ball's pull
+        // eases independently at the calm rates, so even a mid-ride roll
+        // is just one lazy glide home overlapping one gentle bloom out.
+        if (grabTarget > 0.05 && prevGT <= 0.05) {
+            which = Math.random() < 0.5 ? 0 : 1;
         }
-        prevProx = grabTarget;
-        which += (whichTarget - which) * 0.05;
-        gl.uniform1f(uWhich, which);
-        grab += (grabTarget - grab) * (grabTarget > grab ? 0.08 : 0.012);
-        gl.uniform1f(uGrab, grab);
+        prevGT = grabTarget;
+        var tA = grabTarget * (1 - which);
+        var tB = grabTarget * which;
+        wA += (tA - wA) * (tA > wA ? 0.05 : 0.010);
+        wB += (tB - wB) * (tB > wB ? 0.05 : 0.010);
+        gl.uniform1f(uWA, wA);
+        gl.uniform1f(uWB, wB);
         gl.uniform2f(uRes, canvas.width, canvas.height);
         gl.uniform1f(uTime, timeSec);
         gl.uniform2f(uMouse, mouse.x, mouse.y);
