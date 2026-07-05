@@ -52,8 +52,8 @@
            The inline video element itself moves into the overlay, so the
            picture is instant (buffer and playback position come along)
            and nothing downloads twice. */
-        var lbox = null, lbVideo = null, lbHome = null, lbCss = "";
-        function closeLightbox() {
+        var lbox = null, lbVideo = null, lbHome = null, lbCss = "", lbPushed = false;
+        function closeLightbox(fromPop) {
             if (!lbox || !lbVideo) return;
             lbox.style.opacity = "0";
             lbox.style.pointerEvents = "none";
@@ -62,7 +62,14 @@
             lbVideo.play().catch(function () {});
             lbVideo = null;
             document.body.style.overflow = "";
+            // consume the history entry we pushed on open, unless the
+            // back button itself is what closed us
+            if (lbPushed && !fromPop) { lbPushed = false; history.back(); }
+            else { lbPushed = false; }
         }
+        addEventListener("popstate", function () {
+            if (lbVideo) closeLightbox(true);   // back button closes the overlay, not the page
+        });
         function openLightbox(v) {
             if (!lbox) {
                 lbox = document.createElement("div");
@@ -77,6 +84,16 @@
                 addEventListener("keydown", function (e) {
                     if (e.key === "Escape") closeLightbox();
                 });
+                // visible close button: tap-anywhere and back-button are
+                // invisible affordances, this one says "dismissible"
+                var closeBtn = document.createElement("button");
+                closeBtn.textContent = "✕";
+                closeBtn.setAttribute("aria-label", "Close video");
+                closeBtn.style.cssText = "position:absolute;top:12px;right:14px;z-index:1;" +
+                    "width:44px;height:44px;border:none;background:rgba(255,255,255,.06);" +
+                    "border-radius:50%;color:#c8cdd6;font-size:20px;cursor:pointer;padding:0";
+                closeBtn.addEventListener("click", closeLightbox);
+                lbox.appendChild(closeBtn);
                 document.body.appendChild(lbox);
             }
             lbVideo = v;
@@ -85,6 +102,8 @@
             v.style.cssText = "max-width:96vw;max-height:92vh;width:auto;height:auto;border-radius:10px";
             lbox.appendChild(v);
             document.body.style.overflow = "hidden";
+            // let the back button dismiss the overlay instead of the page
+            try { history.pushState({ lightbox: 1 }, ""); lbPushed = true; } catch (err) {}
             requestAnimationFrame(function () {
                 lbox.style.opacity = "1";
                 lbox.style.pointerEvents = "auto";
