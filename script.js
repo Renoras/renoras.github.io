@@ -717,7 +717,14 @@
         lastMove = performance.now();
     }
     addEventListener("pointermove", pointTo, { passive: true });
-    addEventListener("pointerdown", pointTo, { passive: true });
+    addEventListener("pointerdown", function (e) {
+        pointTo(e);
+        // every touch is its own gesture: re-roll the companion on the
+        // spot, biased toward switching so consecutive taps feel alive
+        if (e.pointerType === "touch") {
+            whichTarget = Math.random() < 0.75 ? 1 - whichTarget : whichTarget;
+        }
+    }, { passive: true });
     // debug: ?grab plants the cursor metaball up-right of the sculpture
     if (/[?&]grab/.test(location.search)) {
         target.x = 0.45; target.y = 0.25;
