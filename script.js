@@ -177,6 +177,7 @@
         "uniform float uIdB;",
         "uniform float uMorph;",    // 0 = shape A, 1 = shape B
         "uniform float uGrab;",     // 0 = satellites orbit the form, 1 = they swarm the cursor
+        "uniform float uCamAmt;",   // how much the pointer sways the camera (damped on touch)
         "vec3 gMouse3;",            // cursor unprojected to the sculpture's depth plane
 
         "mat2 rot(float a){ float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }",
@@ -341,8 +342,8 @@
         "    vec2 OFF = vec2(0.62*fit, mix(-0.36, 0.02, fit));",
 
         /* orbiting camera, steered by the mouse */
-        "    float ca = uTime*0.08 + uSeed*6.2832 + uMouse.x*0.7;",
-        "    float ce = 0.02 + uMouse.y*0.22;",  // near-horizontal orbit keeps verticals vertical
+        "    float ca = uTime*0.08 + uSeed*6.2832 + uMouse.x*0.7*uCamAmt;",
+        "    float ce = 0.02 + uMouse.y*0.22*uCamAmt;",  // near-horizontal orbit keeps verticals vertical
         "    vec3 ro = vec3(sin(ca)*cos(ce), sin(ce), cos(ca)*cos(ce)) * mix(4.8, 3.9, fit);",
         "    vec3 fwd = normalize(-ro);",
         "    vec3 rgt = normalize(cross(vec3(0.0, 1.0, 0.0), fwd));",
@@ -701,12 +702,17 @@
     var mouse = { x: 0, y: 0 }, target = { x: 0, y: 0 };
     var uGrab = gl.getUniformLocation(prog, "uGrab");
     var grab = 0, lastMove = -1e9;
-    addEventListener("pointermove", function (e) {
-        if (e.pointerType === "touch") return;   // touch drags are for scrolling
+    // touch steers the satellite too: listeners stay passive so drags
+    // still scroll the page, but the ball chases the fingertip. The
+    // camera sway is damped on touch so scrolling doesn't rock the scene.
+    gl.uniform1f(gl.getUniformLocation(prog, "uCamAmt"), isMobile ? 0.4 : 1.0);
+    function pointTo(e) {
         target.x = (e.clientX / innerWidth) * 2 - 1;
         target.y = -((e.clientY / innerHeight) * 2 - 1);
         lastMove = performance.now();
-    }, { passive: true });
+    }
+    addEventListener("pointermove", pointTo, { passive: true });
+    addEventListener("pointerdown", pointTo, { passive: true });
     // debug: ?grab plants the cursor metaball up-right of the sculpture
     if (/[?&]grab/.test(location.search)) {
         target.x = 0.45; target.y = 0.25;
