@@ -176,7 +176,8 @@
         "uniform float uIdA;",      // shape codes: 0 sphere, 1 torus, 2 octa, 3 mesh A, 4 mesh B
         "uniform float uIdB;",
         "uniform float uMorph;",    // 0 = shape A, 1 = shape B
-        "uniform float uGrab;",     // 0 = satellites orbit the form, 1 = they swarm the cursor
+        "uniform float uGrab;",     // 0 = satellites orbit the form, 1 = one rides the cursor
+        "uniform float uWhich;",    // which satellite answers the call (re-rolled per approach)
         "uniform float uCamAmt;",   // how much the pointer sways the camera (damped on touch)
         "vec3 gMouse3;",            // cursor unprojected to the sculpture's depth plane
 
@@ -315,13 +316,14 @@
 
         // satellites on true spherical orbits (normalized direction, fixed
         // radius) so they can never wander out and get culled mid-air.
-        // While the mouse is active, the first satellite leaves its orbit
-        // and rides the cursor (with a little bob), melting into whatever
-        // it sweeps across; when idle it drifts back home.
-        "    vec3 s1 = normalize(vec3(sin(uTime*0.50), cos(uTime*0.37), sin(uTime*0.43))) * 1.30;",
+        // While the pointer is active, one of them (picked at random per
+        // approach) leaves its orbit and rides the cursor with a little
+        // bob, melting into whatever it sweeps across; idle, it goes home.
         "    vec3 held = gMouse3 + 0.10*vec3(sin(uTime*1.7), cos(uTime*2.1), sin(uTime*1.3));",
-        "    s1 = mix(s1, held, uGrab);",
+        "    vec3 s1 = normalize(vec3(sin(uTime*0.50), cos(uTime*0.37), sin(uTime*0.43))) * 1.30;",
         "    vec3 s2 = normalize(vec3(cos(uTime*0.31), sin(uTime*0.53), cos(uTime*0.41))) * 1.42;",
+        "    s1 = mix(s1, held, uGrab * (1.0 - uWhich));",
+        "    s2 = mix(s2, held, uGrab * uWhich);",
         "    d = smin(d, length(p - s1) - 0.26, 0.45);",
         "    d = smin(d, length(p - s2) - 0.20, 0.45);",
         "    return d;",
@@ -701,6 +703,9 @@
 
     var mouse = { x: 0, y: 0 }, target = { x: 0, y: 0 };
     var uGrab = gl.getUniformLocation(prog, "uGrab");
+    var uWhich = gl.getUniformLocation(prog, "uWhich");
+    var which = Math.random() < 0.5 ? 0 : 1;
+    var whichTarget = which, prevProx = 0;
     var grab = 0, lastMove = -1e9;
     // touch steers the satellite too: listeners stay passive so drags
     // still scroll the page, but the ball chases the fingertip. The
@@ -774,6 +779,15 @@
         var dym = mouse.y - (0.02 * fit - 0.5 * (1 - fit));
         var prox = Math.min(Math.max((1.35 - Math.sqrt(dxm*dxm + dym*dym)) / 0.45, 0), 1);
         var grabTarget = (now - lastMove < 2200) ? prox : 0;
+        // every fresh approach re-rolls which satellite answers; easing
+        // the choice lets one ball hand the cursor to the other mid-air
+        // if the roll changes while a ride is in progress
+        if (prox > 0.05 && prevProx <= 0.05) {
+            whichTarget = Math.random() < 0.5 ? 0 : 1;
+        }
+        prevProx = prox;
+        which += (whichTarget - which) * 0.05;
+        gl.uniform1f(uWhich, which);
         grab += (grabTarget - grab) * (grabTarget > grab ? 0.08 : 0.012);
         gl.uniform1f(uGrab, grab);
         gl.uniform2f(uRes, canvas.width, canvas.height);
