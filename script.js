@@ -779,13 +779,15 @@
         var dym = mouse.y - (0.02 * fit - 0.5 * (1 - fit));
         var prox = Math.min(Math.max((1.35 - Math.sqrt(dxm*dxm + dym*dym)) / 0.45, 0), 1);
         var grabTarget = (now - lastMove < 2200) ? prox : 0;
-        // every fresh approach re-rolls which satellite answers; easing
-        // the choice lets one ball hand the cursor to the other mid-air
-        // if the roll changes while a ride is in progress
-        if (prox > 0.05 && prevProx <= 0.05) {
+        // every fresh engagement re-rolls which satellite answers (keyed
+        // to engagement, not raw proximity, so touch taps re-roll too:
+        // a finger's position lingers after lifting, proximity doesn't
+        // fall, but the idle timeout still re-arms the edge). Easing the
+        // choice lets one ball hand the cursor to the other mid-air.
+        if (grabTarget > 0.05 && prevProx <= 0.05) {
             whichTarget = Math.random() < 0.5 ? 0 : 1;
         }
-        prevProx = prox;
+        prevProx = grabTarget;
         which += (whichTarget - which) * 0.05;
         gl.uniform1f(uWhich, which);
         grab += (grabTarget - grab) * (grabTarget > grab ? 0.08 : 0.012);
