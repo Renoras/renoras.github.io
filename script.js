@@ -29,14 +29,14 @@
         var el = document.getElementById("tagline");
         if (!el) return;
         var phrases = [
-            "Real-time rendering and PBR material workflows",
-            "Path tracing, ray tracing and hybrid rendering",
-            "Global illumination and light transport",
+            "Real-time rendering and physically based shading",
+            "Ray tracing, path tracing and hybrid pipelines",
             "Game engine architecture and optimization",
+            "Editor tooling and asset pipelines",
             "AI agents that reason and act inside 3D worlds",
             "Multi-agent systems and LLM engineering",
             "Helping engineers and artists grow",
-            "Shipped across mobile, WebGL, VR and AR with Unity",
+            "Unity projects shipped on mobile, WebGL, VR and AR",
             "The scene behind this text is live and follows your input"
         ];
         // reduced-motion users keep the static anchor phrase, no caret
@@ -46,6 +46,34 @@
         var pi = 0, ci = 0, deleting = false;
         el.textContent = "";
         el.classList.add("typing");
+
+        // Reserve the height of the tallest phrase at the current width so
+        // the buttons below never shift as lines wrap while typing.
+        function reserveHeight() {
+            var probe = document.createElement("p");
+            probe.className = el.className;   // .typing included: the caret adds width
+            probe.style.position = "absolute";
+            probe.style.visibility = "hidden";
+            probe.style.minHeight = "0";
+            probe.style.width = el.clientWidth + "px";
+            el.parentNode.insertBefore(probe, el);
+            var max = 0;
+            for (var i = 0; i < phrases.length; i++) {
+                probe.textContent = phrases[i];
+                if (probe.offsetHeight > max) max = probe.offsetHeight;
+            }
+            el.parentNode.removeChild(probe);
+            el.style.minHeight = max + "px";
+        }
+        var resizeT;
+        reserveHeight();
+        addEventListener("resize", function () {
+            clearTimeout(resizeT);
+            resizeT = setTimeout(reserveHeight, 150);
+        });
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(reserveHeight);  // re-measure once the web font is in
+        }
 
         function tick() {
             var full = phrases[pi];
@@ -288,6 +316,7 @@
         "uniform float uWA;",       // per-satellite cursor pull, eased independently in JS
         "uniform float uWB;",       // so a relay is two calm glides, never a snap
         "uniform float uCamAmt;",   // how much the pointer sways the camera (damped on touch)
+        "uniform float uDragYaw;",  // accumulated drag-to-rotate orbit offset, eased in JS
         "vec3 gMouse3;",            // cursor unprojected to the sculpture's depth plane
 
         "mat2 rot(float a){ float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }",
@@ -465,7 +494,7 @@
         "    vec2 OFF = vec2(0.62*fit, mix(-0.36, 0.02, fit));",
 
         /* orbiting camera, steered by the mouse */
-        "    float ca = uTime*0.08 + uSeed*6.2832 + uMouse.x*0.7*uCamAmt;",
+        "    float ca = uTime*0.08 + uSeed*6.2832 + uMouse.x*0.7*uCamAmt + uDragYaw;",
         "    float ce = 0.02 + uMouse.y*0.22*uCamAmt;",  // near-horizontal orbit keeps verticals vertical
         "    vec3 ro = vec3(sin(ca)*cos(ce), sin(ce), cos(ca)*cos(ce)) * mix(4.8, 3.9, fit);",
         "    vec3 fwd = normalize(-ro);",
@@ -556,28 +585,51 @@
         "}"
     ].join("\n");
 
+    // debug: ?nocache stamps the source unique per load, so the driver's
+    // shader cache (keyed on source text) misses and every reload is a
+    // true cold compile — for testing first-visit compile stalls
+    if (/[?&]nocache/.test(location.search)) {
+        FRAG += "\n// " + Math.random();
+    }
+
+    // Compile without querying status: any COMPILE/LINK_STATUS query forces
+    // the driver to finish the work right there, freezing the page for
+    // seconds on weaker GPUs. Errors surface at the deferred link check.
     function compile(type, src) {
         var s = gl.createShader(type);
         gl.shaderSource(s, src);
         gl.compileShader(s);
-        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-            throw new Error(gl.getShaderInfoLog(s));
-        }
         return s;
     }
 
-    var prog;
-    try {
-        prog = gl.createProgram();
-        gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERT));
-        gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAG));
-        gl.linkProgram(prog);
-        if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-            throw new Error(gl.getProgramInfoLog(prog));
+    var prog = gl.createProgram();
+    if (!prog) return; // context lost; CSS gradient fallback remains
+    gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERT));
+    gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAG));
+    gl.linkProgram(prog);
+
+    // KHR_parallel_shader_compile: the driver links on background threads
+    // while the page stays interactive; poll the non-blocking completion
+    // flag and enter the render path only once it's done. Without the
+    // extension the LINK_STATUS query blocks, as it always did.
+    // debug: ?sync forces the old blocking link check
+    var pcExt = /[?&]sync/.test(location.search)
+        ? null : gl.getExtension("KHR_parallel_shader_compile");
+    var linkPolls = 0;
+    (function waitLink() {
+        // safety cap: if completion never signals (~12 s), fall through to
+        // the blocking check rather than never showing the scene
+        if (pcExt && linkPolls++ < 400 &&
+            !gl.getProgramParameter(prog, pcExt.COMPLETION_STATUS_KHR)) {
+            return setTimeout(waitLink, 30);
         }
-    } catch (err) {
-        return; // CSS gradient fallback remains
-    }
+        if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+            return; // CSS gradient fallback remains
+        }
+        boot();
+    })();
+
+    function boot() {
     gl.useProgram(prog);
 
     /* ---- environments: shuffled cycle with crossfades, loaded just in
@@ -849,15 +901,33 @@
         lastMove = performance.now();
         return true;
     }
-    addEventListener("pointermove", pointTo, { passive: true });
+    // drag-to-rotate: horizontal drag distance accumulates into the orbit
+    // angle, eased in the frame loop. Listeners stay passive, so on touch a
+    // vertical drag still scrolls the page while its horizontal component
+    // spins the sculpture.
+    var uDragYaw = gl.getUniformLocation(prog, "uDragYaw");
+    var dragYaw = 0, dragYawT = 0, dragging = false, dragLastX = 0;
+    addEventListener("pointermove", function (e) {
+        var inside = pointTo(e);
+        if (dragging) {
+            if (inside) dragYawT += (e.clientX - dragLastX) * 0.005;
+            dragLastX = e.clientX;
+        }
+    }, { passive: true });
     addEventListener("pointerdown", function (e) {
         // a tap is a discrete gesture: re-roll the companion each time
         // with a fair coin. Per-ball easing keeps any changeover a calm
         // overlapping relay rather than a snap.
-        if (pointTo(e) && e.pointerType === "touch") {
-            which = Math.random() < 0.5 ? 0 : 1;
+        if (pointTo(e)) {
+            if (e.pointerType === "touch") {
+                which = Math.random() < 0.5 ? 0 : 1;
+            }
+            dragging = true;
+            dragLastX = e.clientX;
         }
     }, { passive: true });
+    addEventListener("pointerup", function () { dragging = false; }, { passive: true });
+    addEventListener("pointercancel", function () { dragging = false; }, { passive: true });
     // debug: ?grab plants the cursor metaball up-right of the sculpture
     if (/[?&]grab/.test(location.search)) {
         target.x = 0.45; target.y = 0.25;
@@ -889,6 +959,17 @@
 
     var lastRender = 0;
 
+    // debug: ?fps overlays a live readout of frame rate and render scale
+    var fpsEl = null, fpsN = 0, fpsT = 0;
+    if (/[?&]fps/.test(location.search)) {
+        fpsEl = document.createElement("div");
+        fpsEl.style.cssText =
+            "position:fixed;left:10px;bottom:10px;z-index:99;pointer-events:none;" +
+            "font:12px/1.5 'JetBrains Mono',Consolas,monospace;color:#7ee0c8;" +
+            "background:rgba(10,12,16,.72);padding:4px 9px;border-radius:6px";
+        document.body.appendChild(fpsEl);
+    }
+
     function frame(now) {
         raf = null;
         // idle cap: ~30fps is plenty for the slow ambient motion, and it
@@ -902,6 +983,17 @@
             return;
         }
         lastRender = now;
+        if (fpsEl) {
+            fpsN++;
+            if (!fpsT) { fpsT = now; }
+            else if (now - fpsT >= 500) {
+                fpsEl.textContent =
+                    Math.round(fpsN * 1000 / (now - fpsT)) + " fps · scale " +
+                    SCALE.toFixed(2) + " · " + canvas.width + "×" + canvas.height +
+                    (active ? "" : " · idle cap");
+                fpsN = 0; fpsT = now;
+            }
+        }
         if (active) { adapt(now); }
         else { emaDt = 0; sampled = 0; lastNow = now; } // don't let capped pacing trip the scaler
         resize();
@@ -934,6 +1026,8 @@
         wB += (tB - wB) * (tB > wB ? 0.05 : 0.010);
         gl.uniform1f(uWA, wA);
         gl.uniform1f(uWB, wB);
+        dragYaw += (dragYawT - dragYaw) * 0.10;   // weighty ease toward the dragged angle
+        gl.uniform1f(uDragYaw, dragYaw);
         gl.uniform2f(uRes, canvas.width, canvas.height);
         gl.uniform1f(uTime, timeSec);
         gl.uniform2f(uMouse, mouse.x, mouse.y);
@@ -960,5 +1054,6 @@
 
     wake(); // reduced-motion users still get one rendered frame
 
+    } // boot
     } // initHero
 })();
