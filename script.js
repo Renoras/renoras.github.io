@@ -959,7 +959,9 @@
             // ~1:1 window mapping, clamped so extremes cannot fling the
             // camera: 25 deg of roll = 0.5 rad of yaw, pitch kept shallower
             // to preserve the near-horizontal orbit
-            tiltTX = Math.max(-35, Math.min(35, e.gamma - g0)) * 0.045;
+            // identical mapping on both axes: a degree of phone tilt earns
+            // the same camera swing side-to-side as up-and-down
+            tiltTX = Math.max(-25, Math.min(25, e.gamma - g0)) * 0.02;
             tiltTY = Math.max(-25, Math.min(25, e.beta - b0)) * 0.02;
         }, { passive: true });
     }
