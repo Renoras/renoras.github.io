@@ -317,6 +317,7 @@
         "uniform float uWB;",       // so a relay is two calm glides, never a snap
         "uniform float uCamAmt;",   // how much the pointer sways the camera (damped on touch)
         "uniform float uDragYaw;",  // accumulated drag-to-rotate orbit offset, eased in JS
+        "uniform vec2 uTilt;",      // gyro window-tilt: direct yaw/pitch offsets, eased in JS
         "vec3 gMouse3;",            // cursor unprojected to the sculpture's depth plane
 
         "mat2 rot(float a){ float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }",
@@ -494,8 +495,8 @@
         "    vec2 OFF = vec2(0.62*fit, mix(-0.36, 0.02, fit));",
 
         /* orbiting camera, steered by the mouse */
-        "    float ca = uTime*0.08 + uSeed*6.2832 + uMouse.x*0.7*uCamAmt + uDragYaw;",
-        "    float ce = 0.02 + uMouse.y*0.22*uCamAmt;",  // near-horizontal orbit keeps verticals vertical
+        "    float ca = uTime*0.08 + uSeed*6.2832 + uMouse.x*0.7*uCamAmt + uDragYaw + uTilt.x;",
+        "    float ce = 0.02 + uMouse.y*0.22*uCamAmt + uTilt.y;",  // near-horizontal orbit keeps verticals vertical
         "    vec3 ro = vec3(sin(ca)*cos(ce), sin(ce), cos(ca)*cos(ce)) * mix(4.8, 3.9, fit);",
         "    vec3 fwd = normalize(-ro);",
         "    vec3 rgt = normalize(cross(vec3(0.0, 1.0, 0.0), fwd));",
@@ -933,16 +934,17 @@
     addEventListener("pointerup", function () { dragging = false; }, { passive: true });
     addEventListener("pointercancel", function () { dragging = false; }, { passive: true });
 
-    // Gyroscope sway (platforms that expose orientation without a prompt,
-    // i.e. Android): tilt feeds the same eased camera target as the mouse,
-    // so it inherits the identical low-pass smoothness. iOS 13+ gates the
-    // sensor behind a permission dialog, so it keeps touch-only control.
-    // Tilt never touches lastMove: it is ambient motion, so it must not
-    // trigger the satellite grab and must not lift the 30fps idle cap
-    // (a hand-held phone is never still, and the eased sway reads
-    // perfectly smoothly at the capped rate).
+    // Gyroscope window-tilt (platforms that expose orientation without a
+    // prompt, i.e. Android): phone tilt maps directly and proportionally
+    // onto camera yaw/pitch, like holding a window into the scene, with
+    // just enough easing to stay silky. Deliberately decoupled from the
+    // mouse-sway path: that easing was tuned for subtle ambience and made
+    // the gyro feel laggy and faint. Tilt never touches lastMove, so it
+    // cannot trigger the satellite grab or lift the 30fps idle cap.
     // staged rollout: ?gyro enables it for on-device testing; drop the
     // param gate once the axes and feel are confirmed on real hardware
+    var uTilt = gl.getUniformLocation(prog, "uTilt");
+    var tiltX = 0, tiltY = 0, tiltTX = 0, tiltTY = 0;
     if (isMobile && /[?&]gyro/.test(location.search) &&
         window.DeviceOrientationEvent &&
         typeof DeviceOrientationEvent.requestPermission !== "function") {
@@ -954,10 +956,11 @@
             // the new neutral, and the camera glides home as it does
             g0 += (e.gamma - g0) * 0.002;
             b0 += (e.beta - b0) * 0.002;
-            // the finger owns the target while it is engaged
-            if (performance.now() - lastMove < 600) return;
-            target.x = Math.max(-1, Math.min(1, (e.gamma - g0) / 10));
-            target.y = Math.max(-1, Math.min(1, (e.beta - b0) / 10));
+            // ~1:1 window mapping, clamped so extremes cannot fling the
+            // camera: 25 deg of roll = 0.5 rad of yaw, pitch kept shallower
+            // to preserve the near-horizontal orbit
+            tiltTX = Math.max(-25, Math.min(25, e.gamma - g0)) * 0.02;
+            tiltTY = Math.max(-20, Math.min(20, e.beta - b0)) * 0.012;
         }, { passive: true });
     }
     // debug: ?grab plants the cursor metaball up-right of the sculpture
@@ -1063,6 +1066,11 @@
         gl.uniform1f(uWB, wB);
         dragYaw += (dragYawT - dragYaw) * 0.10;   // weighty ease toward the dragged angle
         gl.uniform1f(uDragYaw, dragYaw);
+        // snappier than the mouse sway: the window illusion needs the view
+        // to track the physical tilt closely
+        tiltX += (tiltTX - tiltX) * 0.18;
+        tiltY += (tiltTY - tiltY) * 0.18;
+        gl.uniform2f(uTilt, tiltX, tiltY);
         gl.uniform2f(uRes, canvas.width, canvas.height);
         gl.uniform1f(uTime, timeSec);
         gl.uniform2f(uMouse, mouse.x, mouse.y);
