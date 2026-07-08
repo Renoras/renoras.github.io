@@ -941,12 +941,9 @@
     // mouse-sway path: that easing was tuned for subtle ambience and made
     // the gyro feel laggy and faint. Tilt never touches lastMove, so it
     // cannot trigger the satellite grab or lift the 30fps idle cap.
-    // staged rollout: ?gyro enables it for on-device testing; drop the
-    // param gate once the axes and feel are confirmed on real hardware
     var uTilt = gl.getUniformLocation(prog, "uTilt");
     var tiltX = 0, tiltY = 0, tiltTX = 0, tiltTY = 0;
-    if (isMobile && /[?&]gyro/.test(location.search) &&
-        window.DeviceOrientationEvent &&
+    if (isMobile && window.DeviceOrientationEvent &&
         typeof DeviceOrientationEvent.requestPermission !== "function") {
         var g0 = null, b0 = 0;
         addEventListener("deviceorientation", function (e) {
