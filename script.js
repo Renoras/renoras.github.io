@@ -928,6 +928,41 @@
     }, { passive: true });
     addEventListener("pointerup", function () { dragging = false; }, { passive: true });
     addEventListener("pointercancel", function () { dragging = false; }, { passive: true });
+
+    // Gyroscope sway (platforms that expose orientation without a prompt,
+    // i.e. Android): tilt feeds the same eased camera target as the mouse,
+    // so it inherits the identical low-pass smoothness. iOS 13+ gates the
+    // sensor behind a permission dialog, so it keeps touch-only control.
+    // lastTilt is deliberately separate from lastMove: the satellite grab
+    // keys off lastMove and must never chase a stale point on a tilt, and
+    // micro-wobble from a held phone must not defeat the idle frame cap.
+    var lastTilt = -1e9;
+    // staged rollout: ?gyro enables it for on-device testing; drop the
+    // param gate once the axes and feel are confirmed on real hardware
+    if (isMobile && /[?&]gyro/.test(location.search) &&
+        window.DeviceOrientationEvent &&
+        typeof DeviceOrientationEvent.requestPermission !== "function") {
+        var g0 = null, b0 = 0, gS = 0, bS = 0;
+        addEventListener("deviceorientation", function (e) {
+            if (e.gamma === null || e.beta === null) return;
+            if (g0 === null) { g0 = gS = e.gamma; b0 = bS = e.beta; return; }
+            // the resting pose re-centers slowly: holding a lean becomes
+            // the new neutral, and the camera glides home as it does
+            g0 += (e.gamma - g0) * 0.002;
+            b0 += (e.beta - b0) * 0.002;
+            // deliberate-motion test: a real departure from the slow-tracked
+            // pose wakes full refresh; sensor noise stays under the cap
+            gS += (e.gamma - gS) * 0.02;
+            bS += (e.beta - bS) * 0.02;
+            if (Math.abs(e.gamma - gS) + Math.abs(e.beta - bS) > 5) {
+                lastTilt = performance.now();
+            }
+            // the finger owns the target while it is engaged
+            if (performance.now() - lastMove < 600) return;
+            target.x = Math.max(-1, Math.min(1, (e.gamma - g0) / 22));
+            target.y = Math.max(-1, Math.min(1, (e.beta - b0) / 22));
+        }, { passive: true });
+    }
     // debug: ?grab plants the cursor metaball up-right of the sculpture
     if (/[?&]grab/.test(location.search)) {
         target.x = 0.45; target.y = 0.25;
@@ -975,7 +1010,7 @@
         // idle cap: ~30fps is plenty for the slow ambient motion, and it
         // roughly halves-to-quarters GPU busy time (especially on high
         // refresh monitors). Mouse interaction restores full refresh.
-        var active = (now - lastMove < 1200);
+        var active = (now - lastMove < 1200 || now - lastTilt < 1200);
         if (!active && now - lastRender < 31) {
             if (!reducedMotion && heroVisible && !document.hidden) {
                 raf = requestAnimationFrame(frame);
