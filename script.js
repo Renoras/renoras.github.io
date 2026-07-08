@@ -858,6 +858,10 @@
     var SCALE = QUALITY === "hq" ? 0.9 : QUALITY === "lq" ? 0.55 : 0.72;
     var SCALE_MIN = QUALITY === "lq" ? 0.35 : 0.45;
     var DPR_CAP = QUALITY === "hq" ? 2 : QUALITY === "lq" ? 1.5 : 1.75;
+    // phones hold the ~30fps pacing even during touch: uncapped means
+    // display refresh (90-120 on modern phones) at peak interaction heat,
+    // and the eased glides read just as smoothly at the capped rate
+    var CAP_ALWAYS = QUALITY === "lq";
     function resize() {
         var dpr = Math.min(devicePixelRatio || 1, DPR_CAP);
         var w = Math.max(1, Math.floor(canvas.clientWidth * dpr * SCALE));
@@ -933,34 +937,27 @@
     // i.e. Android): tilt feeds the same eased camera target as the mouse,
     // so it inherits the identical low-pass smoothness. iOS 13+ gates the
     // sensor behind a permission dialog, so it keeps touch-only control.
-    // lastTilt is deliberately separate from lastMove: the satellite grab
-    // keys off lastMove and must never chase a stale point on a tilt, and
-    // micro-wobble from a held phone must not defeat the idle frame cap.
-    var lastTilt = -1e9;
+    // Tilt never touches lastMove: it is ambient motion, so it must not
+    // trigger the satellite grab and must not lift the 30fps idle cap
+    // (a hand-held phone is never still, and the eased sway reads
+    // perfectly smoothly at the capped rate).
     // staged rollout: ?gyro enables it for on-device testing; drop the
     // param gate once the axes and feel are confirmed on real hardware
     if (isMobile && /[?&]gyro/.test(location.search) &&
         window.DeviceOrientationEvent &&
         typeof DeviceOrientationEvent.requestPermission !== "function") {
-        var g0 = null, b0 = 0, gS = 0, bS = 0;
+        var g0 = null, b0 = 0;
         addEventListener("deviceorientation", function (e) {
             if (e.gamma === null || e.beta === null) return;
-            if (g0 === null) { g0 = gS = e.gamma; b0 = bS = e.beta; return; }
+            if (g0 === null) { g0 = e.gamma; b0 = e.beta; return; }
             // the resting pose re-centers slowly: holding a lean becomes
             // the new neutral, and the camera glides home as it does
             g0 += (e.gamma - g0) * 0.002;
             b0 += (e.beta - b0) * 0.002;
-            // deliberate-motion test: a real departure from the slow-tracked
-            // pose wakes full refresh; sensor noise stays under the cap
-            gS += (e.gamma - gS) * 0.02;
-            bS += (e.beta - bS) * 0.02;
-            if (Math.abs(e.gamma - gS) + Math.abs(e.beta - bS) > 5) {
-                lastTilt = performance.now();
-            }
             // the finger owns the target while it is engaged
             if (performance.now() - lastMove < 600) return;
-            target.x = Math.max(-1, Math.min(1, (e.gamma - g0) / 22));
-            target.y = Math.max(-1, Math.min(1, (e.beta - b0) / 22));
+            target.x = Math.max(-1, Math.min(1, (e.gamma - g0) / 10));
+            target.y = Math.max(-1, Math.min(1, (e.beta - b0) / 10));
         }, { passive: true });
     }
     // debug: ?grab plants the cursor metaball up-right of the sculpture
@@ -980,13 +977,15 @@
     // adaptive quality: EMA of frame spacing; a sustained average past
     // ~24ms (≈42fps) steps the render scale down and re-measures
     var emaDt = 0, sampled = 0, lastNow = 0;
-    function adapt(now) {
+    // limit: 24ms (≈42fps) when uncapped; under a permanent cap frames
+    // pace at ~33ms by design, so judge against ~40ms (<25fps) instead
+    function adapt(now, limit) {
         var dt = now - lastNow;
         lastNow = now;
         if (dt <= 0 || dt > 250) { emaDt = 0; sampled = 0; return; } // resumed from pause
         emaDt = emaDt ? emaDt * 0.95 + dt * 0.05 : dt;
         sampled++;
-        if (sampled > 90 && emaDt > 24 && SCALE > SCALE_MIN) {
+        if (sampled > 90 && emaDt > limit && SCALE > SCALE_MIN) {
             SCALE = Math.max(SCALE_MIN, SCALE - 0.12);
             emaDt = 0; sampled = 0;
         }
@@ -1010,7 +1009,8 @@
         // idle cap: ~30fps is plenty for the slow ambient motion, and it
         // roughly halves-to-quarters GPU busy time (especially on high
         // refresh monitors). Mouse interaction restores full refresh.
-        var active = (now - lastMove < 1200 || now - lastTilt < 1200);
+        var interacting = (now - lastMove < 1200);
+        var active = interacting && !CAP_ALWAYS;
         if (!active && now - lastRender < 31) {
             if (!reducedMotion && heroVisible && !document.hidden) {
                 raf = requestAnimationFrame(frame);
@@ -1025,12 +1025,12 @@
                 fpsEl.textContent =
                     Math.round(fpsN * 1000 / (now - fpsT)) + " fps · scale " +
                     SCALE.toFixed(2) + " · " + canvas.width + "×" + canvas.height +
-                    (active ? "" : " · idle cap");
+                    (active ? "" : interacting ? " · capped" : " · idle cap");
                 fpsN = 0; fpsT = now;
             }
         }
-        if (active) { adapt(now); }
-        else { emaDt = 0; sampled = 0; lastNow = now; } // don't let capped pacing trip the scaler
+        if (interacting) { adapt(now, CAP_ALWAYS ? 40 : 24); }
+        else { emaDt = 0; sampled = 0; lastNow = now; } // idle pacing must not trip the scaler
         resize();
         mouse.x += (target.x - mouse.x) * 0.04;
         mouse.y += (target.y - mouse.y) * 0.04;
